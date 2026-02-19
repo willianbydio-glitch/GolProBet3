@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GolBetPro</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+.card {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+button {
+    padding: 10px 20px;
+    background: #22c55e;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.progress {
+    background: #334155;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+.bar {
+    height: 20px;
+    background: #22c55e;
+    border-radius: 5px;
+}
+</style>
+</head>
+<body>
+
+<h1>⚽ GolBetPro</h1>
+<p>Análise simples de partidas</p>
+
+<div class="card">
+<h2>Time Casa vs Time Fora</h2>
+<button onclick="analisar()">Analisar Jogo</button>
+
+<div id="resultado" style="margin-top:20px;"></div>
+</div>
+
+<script>
+function analisar() {
+
+    // Simulação simples (depois podemos ligar API real)
+    let vitoriasCasa = Math.floor(Math.random() * 5);
+    let vitoriasFora = Math.floor(Math.random() * 5);
+
+    let probCasa = Math.floor((vitoriasCasa / 5) * 100);
+
+    let mediaGols = (Math.random() * 4).toFixed(1);
+
+    let bttsChance = Math.floor(Math.random() * 100);
+
+    document.getElementById("resultado").innerHTML = `
+        <h3>📊 Probabilidade Vitória Casa: ${probCasa}%</h3>
+        <div class="progress">
+            <div class="bar" style="width:${probCasa}%"></div>
+        </div>
+
+        <h3>⚽ Over 2.5 Gols: ${mediaGols > 2.5 ? "Alta Chance" : "Baixa Chance"}</h3>
+
+        <h3>🔥 Ambas Marcam: ${bttsChance > 60 ? "Boa Chance" : "Risco Baixo"}</h3>
+    `;
+}
+</script>
+
+</body>
+</html>
