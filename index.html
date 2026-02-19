@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GolBetPro</title>
+<title>GolBetPro - Profissional</title>
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -32,7 +32,7 @@ button {
 <body>
 
 <h1>⚽ GolBetPro</h1>
-<p>Jogos ao vivo e do dia</p>
+<p>Jogos ao vivo e do dia com análise automática</p>
 
 <button onclick="buscarJogos()">Carregar Jogos</button>
 
@@ -40,9 +40,9 @@ button {
 
 <script>
 
-// URL do seu backend Vercel
 const BACKEND_URL = "https://golprobet3.vercel.app/api";
 
+// Função para carregar jogos
 async function buscarJogos() {
     const hoje = new Date().toISOString().split('T')[0];
     const jogosDiv = document.getElementById("jogos");
@@ -55,14 +55,9 @@ async function buscarJogos() {
         jogosDiv.innerHTML = "";
 
         data.response
-        .filter(jogo => 
-            jogo.fixture.status.short === "NS" || 
-            jogo.fixture.status.short === "1H" || 
-            jogo.fixture.status.short === "2H"
-        )
-        .slice(0, 20)
+        .filter(jogo => ["NS","1H","2H"].includes(jogo.fixture.status.short))
+        .slice(0,50)
         .forEach(jogo => {
-
             const card = document.createElement("div");
             card.className = "card";
             card.innerHTML = `
@@ -82,33 +77,48 @@ async function buscarJogos() {
     }
 }
 
+// Função para analisar um jogo
 async function analisarJogo(homeId, awayId) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
     analiseDiv.innerHTML = "Analisando...";
 
     try {
-        // Substitua 'league' e 'season' pelos valores reais se quiser análises precisas
         const league = 39; // exemplo: Premier League
         const season = 2025; 
 
+        // Estatísticas do time da casa
         const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
         const homeStats = await homeRes.json();
 
+        // Estatísticas do time visitante
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        // Exemplo simples de análise
+        // Probabilidades simples (apenas exemplo, usando médias de gols)
+        const homeGols = homeStats.response?.goals?.for.total.home || 1;
+        const awayGols = awayStats.response?.goals?.against.total.home || 1;
+
+        let probHomeWin = Math.min(95, Math.max(5, Math.round(50 + (homeGols - awayGols)*5)));
+        let probAwayWin = Math.min(95, Math.max(5, Math.round(50 + (awayGols - homeGols)*5)));
+        let probDraw = 100 - probHomeWin - probAwayWin;
+        if(probDraw < 5) probDraw = 5;
+
+        // Over/Under simples
+        const overGoals = homeGols + awayGols > 2.5 ? "Over 2.5" : "Under 2.5";
+
         analiseDiv.innerHTML = `
-            <p><strong>Análise:</strong></p>
-            <p>${homeStats.team?.name ?? 'Time'}: Gols marcados média: ${homeStats?.response?.goals?.for.total.home ?? '-'}</p>
-            <p>${awayStats.team?.name ?? 'Time'}: Gols sofridos média: ${awayStats?.response?.goals?.against.total.home ?? '-'}</p>
+            <p><strong>Análise Probabilística:</strong></p>
+            <p>Vitória ${homeStats.team?.name ?? 'Casa'}: ${probHomeWin}%</p>
+            <p>Empate: ${probDraw}%</p>
+            <p>Vitória ${awayStats.team?.name ?? 'Visitante'}: ${probAwayWin}%</p>
+            <p>${overGoals}</p>
         `;
+
     } catch (err) {
         analiseDiv.innerHTML = "Erro na análise: " + err.message;
     }
 }
 
 </script>
-
 </body>
 </html>
