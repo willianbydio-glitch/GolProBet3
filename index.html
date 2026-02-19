@@ -119,10 +119,73 @@ async function analisarJogo(homeId, awayId) {
 
         const responseHome = await fetch(
             `https://v3.football.api-sports.io/fixtures?team=${homeId}&last=5`,
-            {
-                method: "GET",
-                headers: { "x-apisports-key": API_KEY }
-            }
+            { headers: { "x-apisports-key": API_KEY } }
+        );
+
+        const responseAway = await fetch(
+            `https://v3.football.api-sports.io/fixtures?team=${awayId}&last=5`,
+            { headers: { "x-apisports-key": API_KEY } }
+        );
+
+        const dataHome = await responseHome.json();
+        const dataAway = await responseAway.json();
+
+        function calcularStats(data, teamId) {
+            let golsMarcados = 0;
+            let golsSofridos = 0;
+            let peso = 5;
+
+            data.response.forEach(jogo => {
+
+                let marcados = 0;
+                let sofridos = 0;
+
+                if (jogo.teams.home.id === teamId) {
+                    marcados = jogo.goals.home || 0;
+                    sofridos = jogo.goals.away || 0;
+                } else {
+                    marcados = jogo.goals.away || 0;
+                    sofridos = jogo.goals.home || 0;
+                }
+
+                golsMarcados += marcados * peso;
+                golsSofridos += sofridos * peso;
+
+                peso--; // jogos mais recentes têm mais peso
+            });
+
+            return {
+                mediaMarcados: golsMarcados / 15,
+                mediaSofridos: golsSofridos / 15
+            };
+        }
+
+        const casa = calcularStats(dataHome, homeId);
+        const fora = calcularStats(dataAway, awayId);
+
+        const forcaCasa = casa.mediaMarcados - fora.mediaSofridos;
+        const forcaFora = fora.mediaMarcados - casa.mediaSofridos;
+
+        let probCasa = 50 + (forcaCasa - forcaFora) * 15;
+        let probFora = 100 - probCasa;
+
+        probCasa = Math.max(5, Math.min(90, Math.floor(probCasa)));
+        probFora = 100 - probCasa;
+
+        const mediaTotal = casa.mediaMarcados + fora.mediaMarcados;
+        const btts = casa.mediaMarcados > 1 && fora.mediaMarcados > 1;
+
+        divAnalise.innerHTML = `
+            <p>🏠 Vitória Casa: ${probCasa}%</p>
+            <p>🚀 Vitória Fora: ${probFora}%</p>
+            <p>⚽ Over 2.5: ${mediaTotal > 2.5 ? "Alta chance" : "Baixa chance"}</p>
+            <p>🔥 Ambas Marcam: ${btts ? "Provável" : "Pouco provável"}</p>
+        `;
+
+    } catch (error) {
+        divAnalise.innerHTML = "Erro na análise.";
+    }
+}
         );
 
         const responseAway = await fetch(
