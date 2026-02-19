@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GolBetPro</title>
+
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -12,12 +13,14 @@ body {
     text-align: center;
     padding: 20px;
 }
+
 .card {
     background: #1e293b;
     padding: 15px;
     border-radius: 10px;
     margin-top: 15px;
 }
+
 button {
     padding: 8px 15px;
     background: #22c55e;
@@ -26,7 +29,12 @@ button {
     font-weight: bold;
     cursor: pointer;
 }
+
+button:hover {
+    opacity: 0.8;
+}
 </style>
+
 </head>
 <body>
 
@@ -84,3 +92,70 @@ async function buscarJogos() {
         `;
     });
 }
+
+async function analisarJogo(homeId, awayId) {
+
+    const responseHome = await fetch(
+        `https://v3.football.api-sports.io/fixtures?team=${homeId}&last=5`,
+        {
+            method: "GET",
+            headers: { "x-apisports-key": API_KEY }
+        }
+    );
+
+    const responseAway = await fetch(
+        `https://v3.football.api-sports.io/fixtures?team=${awayId}&last=5`,
+        {
+            method: "GET",
+            headers: { "x-apisports-key": API_KEY }
+        }
+    );
+
+    const dataHome = await responseHome.json();
+    const dataAway = await responseAway.json();
+
+    function calcularMedia(data, teamId) {
+        let golsMarcados = 0;
+        let golsSofridos = 0;
+
+        data.response.forEach(jogo => {
+            if (jogo.teams.home.id === teamId) {
+                golsMarcados += jogo.goals.home;
+                golsSofridos += jogo.goals.away;
+            } else {
+                golsMarcados += jogo.goals.away;
+                golsSofridos += jogo.goals.home;
+            }
+        });
+
+        return {
+            mediaMarcados: golsMarcados / 5,
+            mediaSofridos: golsSofridos / 5
+        };
+    }
+
+    const homeStats = calcularMedia(dataHome, homeId);
+    const awayStats = calcularMedia(dataAway, awayId);
+
+    const probCasa = Math.floor(
+        (homeStats.mediaMarcados /
+        (homeStats.mediaMarcados + awayStats.mediaMarcados)) * 100
+    );
+
+    const mediaTotal = homeStats.mediaMarcados + awayStats.mediaMarcados;
+
+    const btts =
+        homeStats.mediaMarcados > 0.8 &&
+        awayStats.mediaMarcados > 0.8;
+
+    document.getElementById(`analise-${homeId}`).innerHTML = `
+        <p>📊 Vitória Casa: ${probCasa}%</p>
+        <p>⚽ Over 2.5: ${mediaTotal > 2.5 ? "Alta Chance" : "Baixa Chance"}</p>
+        <p>🔥 Ambas Marcam: ${btts ? "Provável" : "Pouco provável"}</p>
+    `;
+}
+
+</script>
+
+</body>
+</html>
