@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GolBetPro</title>
-
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -13,14 +12,12 @@ body {
     text-align: center;
     padding: 20px;
 }
-
 .card {
     background: #1e293b;
     padding: 15px;
     border-radius: 10px;
     margin-top: 15px;
 }
-
 button {
     padding: 8px 15px;
     background: #22c55e;
@@ -28,10 +25,7 @@ button {
     border-radius: 5px;
     font-weight: bold;
     cursor: pointer;
-}
-
-button:hover {
-    opacity: 0.8;
+    margin-top: 5px;
 }
 </style>
 </head>
@@ -46,123 +40,71 @@ button:hover {
 
 <script>
 
-const API_KEY = "3f052ff910b32e4aefa8fe5fd1063387";
+// URL do seu backend Vercel
+const BACKEND_URL = "https://golprobet3.vercel.app/api";
 
 async function buscarJogos() {
-
+    const hoje = new Date().toISOString().split('T')[0];
     const jogosDiv = document.getElementById("jogos");
     jogosDiv.innerHTML = "Carregando jogos...";
 
     try {
-
-        const hoje = new Date().toISOString().split('T')[0];
-
-        const response = await fetch(
-            `https://v3.football.api-sports.io/fixtures?date=${hoje}`,
-            { headers: { "x-apisports-key": API_KEY } }
-        );
-
+        const response = await fetch(`${BACKEND_URL}/jogos?date=${hoje}`);
         const data = await response.json();
-
-        if (!data.response || data.response.length === 0) {
-            jogosDiv.innerHTML = "Nenhum jogo encontrado.";
-            return;
-        }
 
         jogosDiv.innerHTML = "";
 
         data.response
-        .filter(jogo =>
-            jogo.fixture.status.short === "NS" ||
-            jogo.fixture.status.short === "1H" ||
+        .filter(jogo => 
+            jogo.fixture.status.short === "NS" || 
+            jogo.fixture.status.short === "1H" || 
             jogo.fixture.status.short === "2H"
         )
-        .slice(0, 15)
+        .slice(0, 20)
         .forEach(jogo => {
 
-            jogosDiv.innerHTML += `
-                <div class="card">
-                    <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
-                    <p>Liga: ${jogo.league.name}</p>
-                    <p>Status: ${jogo.fixture.status.long}</p>
-                    <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
-
-                    <button onclick="analisarJogo(
-                        ${jogo.teams.home.id},
-                        ${jogo.teams.away.id},
-                        ${jogo.league.id},
-                        ${jogo.league.season},
-                        ${jogo.fixture.id}
-                    )">
-                        Analisar
-                    </button>
-
-                    <div id="analise-${jogo.fixture.id}" style="margin-top:10px;"></div>
-                </div>
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+                <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
+                <p>Status: ${jogo.fixture.status.long}</p>
+                <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
+                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id})">
+                    Analisar
+                </button>
+                <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
             `;
+            jogosDiv.appendChild(card);
         });
 
-    } catch (error) {
-        jogosDiv.innerHTML = "Erro ao carregar jogos.";
+    } catch (err) {
+        jogosDiv.innerHTML = "Erro ao carregar jogos: " + err.message;
     }
 }
 
-async function analisarJogo(homeId, awayId, leagueId, season, fixtureId) {
-
-    const divAnalise = document.getElementById(`analise-${fixtureId}`);
-    divAnalise.innerHTML = "Analisando...";
+async function analisarJogo(homeId, awayId) {
+    const analiseDiv = document.getElementById(`analise-${homeId}`);
+    analiseDiv.innerHTML = "Analisando...";
 
     try {
+        // Substitua 'league' e 'season' pelos valores reais se quiser análises precisas
+        const league = 39; // exemplo: Premier League
+        const season = 2025; 
 
-        const responseHome = await fetch(
-            `https://v3.football.api-sports.io/teams/statistics?season=${season}&league=${leagueId}&team=${homeId}`,
-            { headers: { "x-apisports-key": API_KEY } }
-        );
+        const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
+        const homeStats = await homeRes.json();
 
-        const responseAway = await fetch(
-            `https://v3.football.api-sports.io/teams/statistics?season=${season}&league=${leagueId}&team=${awayId}`,
-            { headers: { "x-apisports-key": API_KEY } }
-        );
+        const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
+        const awayStats = await awayRes.json();
 
-        const dataHome = await responseHome.json();
-        const dataAway = await responseAway.json();
-
-        if (!dataHome.response || !dataAway.response) {
-            divAnalise.innerHTML = "Sem dados suficientes.";
-            return;
-        }
-
-        const casa = dataHome.response;
-        const fora = dataAway.response;
-
-        const golsCasa = parseFloat(casa.goals.for.average.total) || 1;
-        const golsFora = parseFloat(fora.goals.for.average.total) || 1;
-
-        const sofreCasa = parseFloat(casa.goals.against.average.total) || 1;
-        const sofreFora = parseFloat(fora.goals.against.average.total) || 1;
-
-        const forcaCasa = golsCasa - sofreFora;
-        const forcaFora = golsFora - sofreCasa;
-
-        let probCasa = 50 + (forcaCasa - forcaFora) * 20;
-        probCasa = Math.max(10, Math.min(85, Math.floor(probCasa)));
-
-        const probFora = 100 - probCasa;
-        const probEmpate = 100 - (probCasa + probFora);
-
-        const over25 = (golsCasa + golsFora) > 2.6;
-        const btts = golsCasa > 1 && golsFora > 1;
-
-        divAnalise.innerHTML = `
-            <p>🏠 Vitória Casa: ${probCasa}%</p>
-            <p>🤝 Empate: ${probEmpate}%</p>
-            <p>🚀 Vitória Fora: ${probFora}%</p>
-            <p>⚽ Over 2.5: ${over25 ? "Alta probabilidade" : "Baixa probabilidade"}</p>
-            <p>🔥 Ambas Marcam: ${btts ? "Provável" : "Pouco provável"}</p>
+        // Exemplo simples de análise
+        analiseDiv.innerHTML = `
+            <p><strong>Análise:</strong></p>
+            <p>${homeStats.team?.name ?? 'Time'}: Gols marcados média: ${homeStats?.response?.goals?.for.total.home ?? '-'}</p>
+            <p>${awayStats.team?.name ?? 'Time'}: Gols sofridos média: ${awayStats?.response?.goals?.against.total.home ?? '-'}</p>
         `;
-
-    } catch (error) {
-        divAnalise.innerHTML = "Erro na análise.";
+    } catch (err) {
+        analiseDiv.innerHTML = "Erro na análise: " + err.message;
     }
 }
 
