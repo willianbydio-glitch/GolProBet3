@@ -14,66 +14,64 @@ body {
 }
 .card {
     background: #1e293b;
-    padding: 20px;
+    padding: 15px;
     border-radius: 10px;
-    margin-top: 20px;
+    margin-top: 15px;
 }
 button {
-    padding: 10px 20px;
+    padding: 8px 15px;
     background: #22c55e;
     border: none;
     border-radius: 5px;
     font-weight: bold;
     cursor: pointer;
 }
-.progress {
-    background: #334155;
-    border-radius: 5px;
-    margin: 10px 0;
-}
-.bar {
-    height: 20px;
-    background: #22c55e;
-    border-radius: 5px;
-}
 </style>
 </head>
 <body>
 
 <h1>⚽ GolBetPro</h1>
-<p>Análise simples de partidas</p>
+<p>Jogos ao vivo e do dia</p>
 
-<div class="card">
-<h2>Time Casa vs Time Fora</h2>
-<button onclick="analisar()">Analisar Jogo</button>
+<button onclick="buscarJogos()">Carregar Jogos</button>
 
-<div id="resultado" style="margin-top:20px;"></div>
-</div>
+<div id="jogos"></div>
 
 <script>
-function analisar() {
 
-    // Simulação simples (depois podemos ligar API real)
-    let vitoriasCasa = Math.floor(Math.random() * 5);
-    let vitoriasFora = Math.floor(Math.random() * 5);
+const API_KEY = "3f052ff910b32e4aefa8fe5fd1063387";
 
-    let probCasa = Math.floor((vitoriasCasa / 5) * 100);
+async function buscarJogos() {
 
-    let mediaGols = (Math.random() * 4).toFixed(1);
+    const hoje = new Date().toISOString().split('T')[0];
 
-    let bttsChance = Math.floor(Math.random() * 100);
+    const response = await fetch(
+        `https://v3.football.api-sports.io/fixtures?date=${hoje}`,
+        {
+            method: "GET",
+            headers: {
+                "x-apisports-key": API_KEY
+            }
+        }
+    );
 
-    document.getElementById("resultado").innerHTML = `
-        <h3>📊 Probabilidade Vitória Casa: ${probCasa}%</h3>
-        <div class="progress">
-            <div class="bar" style="width:${probCasa}%"></div>
-        </div>
+    const data = await response.json();
 
-        <h3>⚽ Over 2.5 Gols: ${mediaGols > 2.5 ? "Alta Chance" : "Baixa Chance"}</h3>
+    const jogosDiv = document.getElementById("jogos");
+    jogosDiv.innerHTML = "";
 
-        <h3>🔥 Ambas Marcam: ${bttsChance > 60 ? "Boa Chance" : "Risco Baixo"}</h3>
-    `;
+    data.response.slice(0,10).forEach(jogo => {
+
+        jogosDiv.innerHTML += `
+            <div class="card">
+                <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
+                <p>Status: ${jogo.fixture.status.long}</p>
+                <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
+            </div>
+        `;
+    });
 }
+
 </script>
 
 </body>
