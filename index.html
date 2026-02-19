@@ -68,14 +68,22 @@ async function buscarJogos() {
 )
 .forEach(jogo => {
 
-        jogosDiv.innerHTML += `
-            <div class="card">
-                <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
-                <p>Status: ${jogo.fixture.status.long}</p>
-                <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
-            </div>
-        `;
-    });
+.forEach(jogo => {
+
+    jogosDiv.innerHTML += `
+    <div class="card">
+        <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
+        <p>Status: ${jogo.fixture.status.long}</p>
+        <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
+
+        <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id})">
+            Analisar
+        </button>
+
+        <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
+    </div>
+`;
+});
 }
 
 </script>
