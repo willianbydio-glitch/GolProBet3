@@ -60,7 +60,14 @@ async function buscarJogos() {
     const jogosDiv = document.getElementById("jogos");
     jogosDiv.innerHTML = "";
 
-    data.response.slice(0,10).forEach(jogo => {
+    data.response
+.filter(jogo => 
+    jogo.fixture.status.short === "NS" || 
+    jogo.fixture.status.short === "1H" || 
+    jogo.fixture.status.short === "2H"
+)
+.slice(0,10)
+.forEach(jogo => {
 
         jogosDiv.innerHTML += `
             <div class="card">
