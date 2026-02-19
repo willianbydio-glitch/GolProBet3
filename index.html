@@ -34,7 +34,6 @@ button:hover {
     opacity: 0.8;
 }
 </style>
-
 </head>
 <body>
 
@@ -47,7 +46,7 @@ button:hover {
 
 <script>
 
-const API_KEY = "3f052ff910b32e4aefa8fe5fd1063387";
+const API_KEY = "SUA_CHAVE_AQUI";
 
 async function buscarJogos() {
 
@@ -60,9 +59,7 @@ async function buscarJogos() {
 
         const response = await fetch(
             `https://v3.football.api-sports.io/fixtures?date=${hoje}`,
-            {
-                headers: { "x-apisports-key": API_KEY }
-            }
+            { headers: { "x-apisports-key": API_KEY } }
         );
 
         const data = await response.json();
@@ -94,7 +91,8 @@ async function buscarJogos() {
                         ${jogo.teams.home.id},
                         ${jogo.teams.away.id},
                         ${jogo.league.id},
-                        ${jogo.league.season}
+                        ${jogo.league.season},
+                        ${jogo.fixture.id}
                     )">
                         Analisar
                     </button>
@@ -109,9 +107,9 @@ async function buscarJogos() {
     }
 }
 
-async function analisarJogo(homeId, awayId, leagueId, season) {
+async function analisarJogo(homeId, awayId, leagueId, season, fixtureId) {
 
-    const divAnalise = document.getElementById(`analise-${event.target.closest('.card').querySelector('div').id.split('-')[1]}`);
+    const divAnalise = document.getElementById(`analise-${fixtureId}`);
     divAnalise.innerHTML = "Analisando...";
 
     try {
@@ -150,7 +148,7 @@ async function analisarJogo(homeId, awayId, leagueId, season) {
         probCasa = Math.max(10, Math.min(85, Math.floor(probCasa)));
 
         const probFora = 100 - probCasa;
-        const probEmpate = Math.max(5, 100 - (probCasa + probFora));
+        const probEmpate = 100 - (probCasa + probFora);
 
         const over25 = (golsCasa + golsFora) > 2.6;
         const btts = golsCasa > 1 && golsFora > 1;
