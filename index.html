@@ -61,30 +61,26 @@ async function buscarJogos() {
     jogosDiv.innerHTML = "";
 
     data.response
-.filter(jogo => 
-    jogo.fixture.status.short === "NS" || 
-    jogo.fixture.status.short === "1H" || 
-    jogo.fixture.status.short === "2H"
-)
-.forEach(jogo => {
+    .filter(jogo => 
+        jogo.fixture.status.short === "NS" || 
+        jogo.fixture.status.short === "1H" || 
+        jogo.fixture.status.short === "2H"
+    )
+    .slice(0,20)
+    .forEach(jogo => {
 
-    jogosDiv.innerHTML += `
-    <div class="card">
-        <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
-        <p>Status: ${jogo.fixture.status.long}</p>
-        <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
+        jogosDiv.innerHTML += `
+            <div class="card">
+                <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
+                <p>Status: ${jogo.fixture.status.long}</p>
+                <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
 
-        <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id})">
-            Analisar
-        </button>
+                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id})">
+                    Analisar
+                </button>
 
-        <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
-    </div>
-`;
-});
+                <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
+            </div>
+        `;
+    });
 }
-
-</script>
-
-</body>
-</html>
