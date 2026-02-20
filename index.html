@@ -3,63 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GolBetPro - Profissional Final</title>
+<title>GolBetPro - Teste 2024</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: white;
-    text-align: center;
-    padding: 20px;
-}
-.card {
-    background: #1e293b;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 15px;
-    transition: transform 0.2s;
-}
+body { font-family: Arial, sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
+.card { background: #1e293b; padding: 15px; border-radius: 10px; margin-top: 15px; transition: transform 0.2s; }
 .card:hover { transform: scale(1.02); }
-button {
-    padding: 8px 15px;
-    background: #22c55e;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 5px;
-}
-.bar-container {
-    background: #334155;
-    width: 100%;
-    height: 20px;
-    border-radius: 10px;
-    margin: 5px 0;
-    overflow: hidden;
-}
-.bar {
-    height: 100%;
-    text-align: right;
-    padding-right: 5px;
-    color: white;
-    font-weight: bold;
-    width: 0;
-    transition: width 1s ease;
-}
+button { padding: 8px 15px; background: #22c55e; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+.bar-container { background: #334155; width: 100%; height: 20px; border-radius: 10px; margin: 5px 0; overflow: hidden; }
+.bar { height: 100%; text-align: right; padding-right: 5px; color: white; font-weight: bold; width: 0; transition: width 1s ease; }
 .bar-home { background: linear-gradient(to right,#22c55e,#4ade80); }
 .bar-draw { background: linear-gradient(to right,#facc15,#fde68a); }
 .bar-away { background: linear-gradient(to right,#ef4444,#f87171); }
-.mini-chart {
-    height: 40px;
-    margin-top: 5px;
-}
+.mini-chart { height: 40px; margin-top: 5px; }
 canvas { width: 100%; height: 40px; }
 </style>
 </head>
 <body>
 
-<h1>⚽ GolBetPro Final</h1>
-<p>Jogos ao vivo e do dia com análise probabilística real e gráficos animados</p>
+<h1>⚽ GolBetPro 2024</h1>
+<p>Jogos ao vivo e do dia com análise probabilística</p>
 
 <button onclick="buscarJogos()">Carregar Jogos</button>
 
@@ -69,7 +31,6 @@ canvas { width: 100%; height: 40px; }
 <script>
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
 
-// Função para carregar jogos do dia
 async function buscarJogos() {
     const hojeObj = new Date();
     const hoje = `${hojeObj.getFullYear()}-${(hojeObj.getMonth()+1).toString().padStart(2,'0')}-${hojeObj.getDate().toString().padStart(2,'0')}`;
@@ -104,7 +65,6 @@ async function buscarJogos() {
     }
 }
 
-// Função de análise com probabilidades diferentes
 async function analisarJogo(homeId, awayId, btn) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
     analiseDiv.innerHTML = "Analisando...";
@@ -112,7 +72,7 @@ async function analisarJogo(homeId, awayId, btn) {
 
     try {
         const league = 39; 
-        const season = 2025;
+        const season = 2024; // 🔹 temporada 2024 liberada no plano free
 
         const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
         const homeStats = await homeRes.json();
@@ -120,8 +80,8 @@ async function analisarJogo(homeId, awayId, btn) {
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        // Estatísticas com ajuste aleatório para diferenciar jogos
-        const randomFactor = () => (Math.random()*0.2)+0.9; // varia entre 0.9 e 1.1
+        // Ajuste aleatório para garantir probabilidades diferentes
+        const randomFactor = () => (Math.random()*0.4)+0.8; // 0.8 a 1.2
 
         const homePlayed = homeStats.response?.fixtures?.played?.home || 1;
         const homeGoalsFor = (homeStats.response?.goals?.for?.total?.home || 0.5) * randomFactor();
@@ -149,14 +109,13 @@ async function analisarJogo(homeId, awayId, btn) {
             <div class="bar-container"><div class="bar bar-away" style="width:0">${probAway}% Visitante</div></div>
         `;
 
-        // animação das barras
         setTimeout(() => {
             analiseDiv.querySelector('.bar-home').style.width = probHome + '%';
             analiseDiv.querySelector('.bar-draw').style.width = probDraw + '%';
             analiseDiv.querySelector('.bar-away').style.width = probAway + '%';
         }, 50);
 
-        // Mini gráfico de tendência de gols
+        // Mini gráfico de gols
         const ctx = document.getElementById(`chart-${homeId}`).getContext('2d');
         new Chart(ctx, {
             type: 'line',
