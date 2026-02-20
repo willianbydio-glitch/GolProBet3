@@ -1,4 +1,3 @@
-// api/estatisticas.js
 const fetch = require("node-fetch");
 
 const API_KEY = "3f052ff910b32e4aefa8fe5fd1063387";
