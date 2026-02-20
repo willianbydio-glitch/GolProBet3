@@ -3,33 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GolBetPro Nova API</title>
+<title>GolBetPro Profissional 3.0</title>
 <style>
 body { font-family: Arial, sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
-.card { background: #1e293b; padding: 15px; border-radius: 10px; margin-top: 15px; transition: transform 0.2s; }
+.card { background: #1e293b; padding: 15px; border-radius: 10px; margin-top: 15px; transition: transform 0.2s; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
 .card:hover { transform: scale(1.02); }
 button { padding: 8px 15px; background: #22c55e; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-.bar-container { background: #334155; width: 100%; height: 20px; border-radius: 10px; margin: 5px 0; overflow: hidden; }
-.bar { height: 100%; text-align: right; padding-right: 5px; color: white; font-weight: bold; width: 0; transition: width 1s ease; }
+.bar-container { background: #334155; width: 100%; height: 22px; border-radius: 10px; margin: 6px 0; overflow: hidden; position: relative; }
+.bar { height: 100%; text-align: right; padding-right: 5px; color: white; font-weight: bold; width: 0; transition: width 1s ease; position: relative; }
 .bar-home { background: linear-gradient(to right,#22c55e,#4ade80); }
 .bar-draw { background: linear-gradient(to right,#facc15,#fde68a); }
 .bar-away { background: linear-gradient(to right,#ef4444,#f87171); }
-.mini-chart { height: 40px; margin-top: 5px; }
-canvas { width: 100%; height: 40px; }
+.tooltip { position: absolute; background: #1e293b; padding: 5px 8px; border-radius: 5px; font-size: 12px; display: none; color: #fff; }
+.mini-chart { height: 50px; margin-top: 5px; }
+canvas { width: 100%; height: 50px; }
 </style>
 </head>
 <body>
 
-<h1>⚽ GolBetPro - Nova API</h1>
-<p>Jogos ao vivo e do dia com análise probabilística</p>
-
-<button onclick="buscarJogos()">Carregar Jogos</button>
+<h1>⚽ GolBetPro Profissional 3.0</h1>
+<p>Jogos ao vivo e do dia com atualização automática</p>
 
 <div id="jogos"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
+const UPDATE_INTERVAL = 60000; // 60 segundos
 
 async function buscarJogos() {
     const hojeObj = new Date();
@@ -46,8 +46,15 @@ async function buscarJogos() {
         .filter(jogo => ["NS","1H","2H"].includes(jogo.fixture.status.short))
         .slice(0,20)
         .forEach(jogo => {
-            const card = document.createElement("div");
-            card.className = "card";
+            const cardId = `card-${jogo.teams.home.id}-${jogo.teams.away.id}`;
+            let card = document.getElementById(cardId);
+            if(!card) {
+                card = document.createElement("div");
+                card.id = cardId;
+                card.className = "card";
+                jogosDiv.appendChild(card);
+            }
+
             card.innerHTML = `
                 <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
                 <p>Status: ${jogo.fixture.status.long}</p>
@@ -56,7 +63,6 @@ async function buscarJogos() {
                 <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
                 <div class="mini-chart"><canvas id="chart-${jogo.teams.home.id}"></canvas></div>
             `;
-            jogosDiv.appendChild(card);
         });
     } catch(err) {
         jogosDiv.innerHTML = "Erro ao carregar jogos: " + err.message;
@@ -69,16 +75,15 @@ async function analisarJogo(homeId, awayId, btn) {
     btn.disabled = true;
 
     try {
-        const league = 39; 
-        const season = 2025; // você pode ajustar temporada se quiser
+        const league = 39;
+        const season = 2025;
+
         const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
         const homeStats = await homeRes.json();
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        // Se a API não tiver dados completos, usamos ajuste aleatório
         const randomFactor = () => (Math.random()*0.4)+0.8;
-
         const homeGoals = (homeStats.response?.goals?.for?.total?.home || 1) * randomFactor();
         const awayGoals = (awayStats.response?.goals?.for?.total?.away || 1) * randomFactor();
 
@@ -88,10 +93,13 @@ async function analisarJogo(homeId, awayId, btn) {
         const probDraw = 100 - probHome - probAway;
 
         const overGoals = (homeGoals + awayGoals) > 2.5 ? "Over 2.5" : "Under 2.5";
+        const placarCasa = Math.round(homeGoals);
+        const placarFora = Math.round(awayGoals);
 
         analiseDiv.innerHTML = `
             <p><strong>Análise Probabilística:</strong></p>
             <p>Over/Under: ${overGoals}</p>
+            <p>Previsão de Placar: ${placarCasa} x ${placarFora}</p>
             <div class="bar-container"><div class="bar bar-home" style="width:0">${probHome}% Casa</div></div>
             <div class="bar-container"><div class="bar bar-draw" style="width:0">${probDraw}% Empate</div></div>
             <div class="bar-container"><div class="bar bar-away" style="width:0">${probAway}% Visitante</div></div>
@@ -103,7 +111,6 @@ async function analisarJogo(homeId, awayId, btn) {
             analiseDiv.querySelector('.bar-away').style.width = probAway + '%';
         }, 50);
 
-        // Gráfico de gols
         const ctx = document.getElementById(`chart-${homeId}`).getContext('2d');
         new Chart(ctx, {
             type: 'line',
@@ -114,7 +121,7 @@ async function analisarJogo(homeId, awayId, btn) {
                     { label: 'Visitante', data: [awayGoals*0.8, awayGoals*0.9, awayGoals, awayGoals*1.05, awayGoals], borderColor:'#ef4444', fill:false }
                 ]
             },
-            options: { responsive:true, plugins:{legend:{display:true,labels:{color:'white'}}}, scales:{ x:{ticks:{color:'white'}}, y:{ticks:{color:'white'}} } }
+            options: { responsive:true, plugins:{legend:{display:true,labels:{color:'white'}}, tooltip:{enabled:true}}, scales:{ x:{ticks:{color:'white'}}, y:{ticks:{color:'white'}} } }
         });
 
     } catch(err) {
@@ -123,7 +130,11 @@ async function analisarJogo(homeId, awayId, btn) {
         btn.disabled = false;
     }
 }
-</script>
 
+// Atualiza automaticamente os jogos a cada X segundos
+buscarJogos();
+setInterval(buscarJogos, UPDATE_INTERVAL);
+
+</script>
 </body>
 </html>
