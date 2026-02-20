@@ -39,12 +39,16 @@ button {
 <div id="jogos"></div>
 
 <script>
-
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
 
 // Função para carregar jogos
 async function buscarJogos() {
-    const hoje = new Date().toISOString().split('T')[0];
+    let hoje = new Date();
+    let dia = hoje.getDate().toString().padStart(2,'0');
+    let mes = (hoje.getMonth()+1).toString().padStart(2,'0');
+    let ano = hoje.getFullYear();
+    hoje = `${ano}-${mes}-${dia}`;
+
     const jogosDiv = document.getElementById("jogos");
     jogosDiv.innerHTML = "Carregando jogos...";
 
@@ -56,7 +60,7 @@ async function buscarJogos() {
 
         data.response
         .filter(jogo => ["NS","1H","2H"].includes(jogo.fixture.status.short))
-        .slice(0,50)
+        .slice(0,20)
         .forEach(jogo => {
             const card = document.createElement("div");
             card.className = "card";
@@ -77,24 +81,21 @@ async function buscarJogos() {
     }
 }
 
-// Função para analisar um jogo
+// Função para analisar jogo com probabilidades
 async function analisarJogo(homeId, awayId) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
     analiseDiv.innerHTML = "Analisando...";
 
     try {
-        const league = 39; // exemplo: Premier League
+        const league = 39; 
         const season = 2025; 
 
-        // Estatísticas do time da casa
         const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
         const homeStats = await homeRes.json();
 
-        // Estatísticas do time visitante
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        // Probabilidades simples (apenas exemplo, usando médias de gols)
         const homeGols = homeStats.response?.goals?.for.total.home || 1;
         const awayGols = awayStats.response?.goals?.against.total.home || 1;
 
@@ -103,7 +104,6 @@ async function analisarJogo(homeId, awayId) {
         let probDraw = 100 - probHomeWin - probAwayWin;
         if(probDraw < 5) probDraw = 5;
 
-        // Over/Under simples
         const overGoals = homeGols + awayGols > 2.5 ? "Over 2.5" : "Under 2.5";
 
         analiseDiv.innerHTML = `
@@ -113,12 +113,11 @@ async function analisarJogo(homeId, awayId) {
             <p>Vitória ${awayStats.team?.name ?? 'Visitante'}: ${probAwayWin}%</p>
             <p>${overGoals}</p>
         `;
-
     } catch (err) {
         analiseDiv.innerHTML = "Erro na análise: " + err.message;
     }
 }
-
 </script>
+
 </body>
 </html>
