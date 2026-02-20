@@ -5,145 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GolBetPro - Profissional</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: white;
-    text-align: center;
-    padding: 20px;
-}
-.card {
-    background: #1e293b;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 15px;
-}
-button {
-    padding: 8px 15px;
-    background: #22c55e;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 5px;
-}
-.bar-container {
-    background: #334155;
-    width: 100%;
-    height: 20px;
-    border-radius: 10px;
-    margin: 5px 0;
-    overflow: hidden;
-}
-.bar {
-    height: 100%;
-    text-align: right;
-    padding-right: 5px;
-    color: white;
-    font-weight: bold;
-}
-.bar-home { background: #22c55e; }
-.bar-draw { background: #facc15; }
-.bar-away { background: #ef4444; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
+    .card { background: #1e293b; padding: 20px; border-radius: 12px; margin: 15px auto; max-width: 500px; border: 1px solid #334155; }
+    button { padding: 10px 20px; background: #22c55e; border: none; border-radius: 6px; font-weight: bold; color: white; cursor: pointer; transition: 0.3s; }
+    button:hover { background: #16a34a; }
+    .bar-container { background: #334155; width: 100%; height: 25px; border-radius: 12px; margin: 8px 0; overflow: hidden; display: flex; align-items: center; }
+    .bar { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; transition: width 1s ease-in-out; }
+    .bar-home { background: #22c55e; }
+    .bar-draw { background: #facc15; color: #1e293b; }
+    .bar-away { background: #ef4444; }
+    .status-live { color: #22c55e; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <h1>⚽ GolBetPro</h1>
-<p>Jogos ao vivo e do dia com análise gráfica e probabilística real</p>
+<p>Análise probabilística baseada em desempenho real (xG)</p>
 
-<button onclick="buscarJogos()">Carregar Jogos</button>
+<button onclick="buscarJogos()">🔄 Carregar Jogos de Hoje</button>
 
 <div id="jogos"></div>
 
 <script>
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
 
-// Função para carregar jogos
 async function buscarJogos() {
-    let hoje = new Date();
-    let dia = hoje.getDate().toString().padStart(2,'0');
-    let mes = (hoje.getMonth()+1).toString().padStart(2,'0');
-    let ano = hoje.getFullYear();
-    hoje = `${ano}-${mes}-${dia}`;
-
     const jogosDiv = document.getElementById("jogos");
-    jogosDiv.innerHTML = "Carregando jogos...";
+    jogosDiv.innerHTML = "<p>Buscando partidas do dia...</p>";
+
+    let hoje = new Date().toISOString().split('T')[0];
 
     try {
         const response = await fetch(`${BACKEND_URL}/jogos?date=${hoje}`);
         const data = await response.json();
-        jogosDiv.innerHTML = "";
+        
+        if (!data.response || data.response.length === 0) {
+            jogosDiv.innerHTML = "Nenhum jogo encontrado para hoje.";
+            return;
+        }
 
+        jogosDiv.innerHTML = "";
         data.response
-        .filter(jogo => ["NS","1H","2H"].includes(jogo.fixture.status.short))
-        .slice(0,20)
+        .filter(jogo => ["NS","1H","2H","HT"].includes(jogo.fixture.status.short))
+        .slice(0, 15)
         .forEach(jogo => {
             const card = document.createElement("div");
             card.className = "card";
             card.innerHTML = `
                 <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
-                <p>Status: ${jogo.fixture.status.long}</p>
-                <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
-                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id})">
-                    Analisar
+                <p>Liga: ${jogo.league.name} | <span class="status-live">${jogo.fixture.status.long}</span></p>
+                <p>Placar: <strong>${jogo.goals.home ?? 0} - ${jogo.goals.away ?? 0}</strong></p>
+                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id}, ${jogo.league.id}, ${jogo.league.season})">
+                    📊 Gerar Análise Real
                 </button>
-                <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
+                <div id="analise-${jogo.teams.home.id}" style="margin-top:15px;"></div>
             `;
             jogosDiv.appendChild(card);
         });
     } catch (err) {
-        jogosDiv.innerHTML = "Erro ao carregar jogos: " + err.message;
+        jogosDiv.innerHTML = "Erro de conexão: " + err.message;
     }
 }
 
-// Função para análise probabilística dinâmica
-async function analisarJogo(homeId, awayId) {
+async function analisarJogo(homeId, awayId, leagueId, seasonId) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
-    analiseDiv.innerHTML = "Analisando...";
+    analiseDiv.innerHTML = "Calculando probabilidades...";
 
     try {
-        const league = 39; // Exemplo Premier League
-        const season = 2025;
+        // Agora usamos os IDs dinâmicos vindos do jogo selecionado
+        const [homeRes, awayRes] = await Promise.all([
+            fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${leagueId}&season=${seasonId}`),
+            fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${leagueId}&season=${seasonId}`)
+        ]);
 
-        const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
-        const homeStats = await homeRes.json();
+        const homeData = await homeRes.json();
+        const awayData = await awayRes.json();
 
-        const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
-        const awayStats = await awayRes.json();
+        // Extração de dados com "fallback" para evitar divisão por zero
+        const hStats = homeData.response?.fixtures?.played?.total || 1;
+        const aStats = awayData.response?.fixtures?.played?.total || 1;
 
-        // Gols esperados com dados reais
-        const homePlayed = homeStats.response?.fixtures?.played?.total || 1;
-        const homeFor = homeStats.response?.goals?.for?.total?.total || 0;
-        const homeAgainst = homeStats.response?.goals?.against?.total?.total || 0;
+        // Média de Gols Marcados e Sofridos
+        const hAttack = (homeData.response?.goals?.for?.total?.total || 0) / hStats;
+        const hDefense = (homeData.response?.goals?.against?.total?.total || 0) / hStats;
+        const aAttack = (awayData.response?.goals?.for?.total?.total || 0) / aStats;
+        const aDefense = (awayData.response?.goals?.against?.total?.total || 0) / aStats;
 
-        const awayPlayed = awayStats.response?.fixtures?.played?.total || 1;
-        const awayFor = awayStats.response?.goals?.for?.total?.total || 0;
-        const awayAgainst = awayStats.response?.goals?.against?.total?.total || 0;
+        // Gols Esperados (xG) simplificado
+        const expHome = (hAttack + aDefense) / 2;
+        const expAway = (aAttack + hDefense) / 2;
 
-        const expHome = (homeFor/homePlayed + awayAgainst/awayPlayed)/2;
-        const expAway = (awayFor/awayPlayed + homeAgainst/homePlayed)/2;
+        // Lógica de Probabilidade (Normalização)
+        // O fator 0.4 simula a margem de empate técnica
+        const sumExp = expHome + expAway + 0.4; 
+        let pHome = Math.round((expHome / sumExp) * 100);
+        let pAway = Math.round((expAway / sumExp) * 100);
+        
+        // Ajuste caso os dados sejam insuficientes (times novos na liga)
+        if(pHome < 10) pHome = 30; 
+        if(pAway < 10) pAway = 25;
 
-        // Probabilidades normalizadas e diferentes para cada jogo
-        let probHome = Math.round((expHome / (expHome + expAway + 0.5)) * 100);
-        let probAway = Math.round((expAway / (expHome + expAway + 0.5)) * 100);
-        let probDraw = 100 - probHome - probAway;
+        let pDraw = 100 - pHome - pAway;
 
-        const overGoals = (expHome + expAway) > 2.5 ? "Over 2.5" : "Under 2.5";
+        const mercado = (expHome + expAway) > 2.2 ? "🔥 Sugestão: Over 2.5 Gols" : "🛡️ Sugestão: Under 2.5 Gols";
 
-        // Gráficos coloridos
         analiseDiv.innerHTML = `
-            <p><strong>Análise Probabilística:</strong></p>
-            <p>Over/Under: ${overGoals}</p>
-            <div class="bar-container"><div class="bar bar-home" style="width:${probHome}%">${probHome}% Casa</div></div>
-            <div class="bar-container"><div class="bar bar-draw" style="width:${probDraw}%">${probDraw}% Empate</div></div>
-            <div class="bar-container"><div class="bar bar-away" style="width:${probAway}%">${probAway}% Visitante</div></div>
+            <hr style="border: 0.5px solid #334155; margin-bottom: 10px;">
+            <p><strong>${mercado}</strong></p>
+            <div class="bar-container"><div class="bar bar-home" style="width:${pHome}%">${pHome}% Casa</div></div>
+            <div class="bar-container"><div class="bar bar-draw" style="width:${pDraw}%">${pDraw}% Empate</div></div>
+            <div class="bar-container"><div class="bar bar-away" style="width:${pAway}%">${pAway}% Fora</div></div>
         `;
     } catch (err) {
-        analiseDiv.innerHTML = "Erro na análise: " + err.message;
+        analiseDiv.innerHTML = "Erro ao processar estatísticas.";
     }
 }
 </script>
-
 </body>
 </html>
