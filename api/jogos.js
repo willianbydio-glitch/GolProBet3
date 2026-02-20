@@ -1,8 +1,9 @@
-import fetch from "node-fetch";
+// api/jogos.js
+const fetch = require("node-fetch");
 
 const API_KEY = "3f052ff910b32e4aefa8fe5fd1063387";
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   const date = req.query.date || new Date().toISOString().split("T")[0];
 
   try {
@@ -15,4 +16,4 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
+};
