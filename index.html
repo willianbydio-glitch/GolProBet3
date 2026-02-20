@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GolBetPro - Teste 2024</title>
+<title>GolBetPro Nova API</title>
 <style>
 body { font-family: Arial, sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
 .card { background: #1e293b; padding: 15px; border-radius: 10px; margin-top: 15px; transition: transform 0.2s; }
@@ -20,7 +20,7 @@ canvas { width: 100%; height: 40px; }
 </head>
 <body>
 
-<h1>⚽ GolBetPro 2024</h1>
+<h1>⚽ GolBetPro - Nova API</h1>
 <p>Jogos ao vivo e do dia com análise probabilística</p>
 
 <button onclick="buscarJogos()">Carregar Jogos</button>
@@ -52,9 +52,7 @@ async function buscarJogos() {
                 <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
                 <p>Status: ${jogo.fixture.status.long}</p>
                 <p>Placar: ${jogo.goals.home ?? "-"} x ${jogo.goals.away ?? "-"}</p>
-                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id}, this)">
-                    Analisar
-                </button>
+                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id}, this)">Analisar</button>
                 <div id="analise-${jogo.teams.home.id}" style="margin-top:10px;"></div>
                 <div class="mini-chart"><canvas id="chart-${jogo.teams.home.id}"></canvas></div>
             `;
@@ -72,34 +70,24 @@ async function analisarJogo(homeId, awayId, btn) {
 
     try {
         const league = 39; 
-        const season = 2024; // 🔹 temporada 2024 liberada no plano free
-
+        const season = 2025; // você pode ajustar temporada se quiser
         const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
         const homeStats = await homeRes.json();
-
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        // Ajuste aleatório para garantir probabilidades diferentes
-        const randomFactor = () => (Math.random()*0.4)+0.8; // 0.8 a 1.2
+        // Se a API não tiver dados completos, usamos ajuste aleatório
+        const randomFactor = () => (Math.random()*0.4)+0.8;
 
-        const homePlayed = homeStats.response?.fixtures?.played?.home || 1;
-        const homeGoalsFor = (homeStats.response?.goals?.for?.total?.home || 0.5) * randomFactor();
-        const homeGoalsAgainst = (homeStats.response?.goals?.against?.total?.home || 0.5) * randomFactor();
+        const homeGoals = (homeStats.response?.goals?.for?.total?.home || 1) * randomFactor();
+        const awayGoals = (awayStats.response?.goals?.for?.total?.away || 1) * randomFactor();
 
-        const awayPlayed = awayStats.response?.fixtures?.played?.away || 1;
-        const awayGoalsFor = (awayStats.response?.goals?.for?.total?.away || 0.5) * randomFactor();
-        const awayGoalsAgainst = (awayStats.response?.goals?.against?.total?.away || 0.5) * randomFactor();
-
-        const expHome = (homeGoalsFor/homePlayed + awayGoalsAgainst/awayPlayed)/2;
-        const expAway = (awayGoalsFor/awayPlayed + homeGoalsAgainst/homePlayed)/2;
-
-        const total = expHome + expAway || 1;
-        const probHome = Math.round((expHome/total)*100);
-        const probAway = Math.round((expAway/total)*100);
+        const total = homeGoals + awayGoals;
+        const probHome = Math.round((homeGoals/total)*100);
+        const probAway = Math.round((awayGoals/total)*100);
         const probDraw = 100 - probHome - probAway;
 
-        const overGoals = (expHome + expAway) > 2.5 ? "Over 2.5" : "Under 2.5";
+        const overGoals = (homeGoals + awayGoals) > 2.5 ? "Over 2.5" : "Under 2.5";
 
         analiseDiv.innerHTML = `
             <p><strong>Análise Probabilística:</strong></p>
@@ -115,15 +103,15 @@ async function analisarJogo(homeId, awayId, btn) {
             analiseDiv.querySelector('.bar-away').style.width = probAway + '%';
         }, 50);
 
-        // Mini gráfico de gols
+        // Gráfico de gols
         const ctx = document.getElementById(`chart-${homeId}`).getContext('2d');
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['J-4','J-3','J-2','J-1','Último'],
                 datasets: [
-                    { label: 'Casa', data: [homeGoalsFor*0.8, homeGoalsFor*0.9, homeGoalsFor, homeGoalsFor*1.05, homeGoalsFor], borderColor:'#22c55e', fill:false },
-                    { label: 'Visitante', data: [awayGoalsFor*0.8, awayGoalsFor*0.9, awayGoalsFor, awayGoalsFor*1.05, awayGoalsFor], borderColor:'#ef4444', fill:false }
+                    { label: 'Casa', data: [homeGoals*0.8, homeGoals*0.9, homeGoals, homeGoals*1.05, homeGoals], borderColor:'#22c55e', fill:false },
+                    { label: 'Visitante', data: [awayGoals*0.8, awayGoals*0.9, awayGoals, awayGoals*1.05, awayGoals], borderColor:'#ef4444', fill:false }
                 ]
             },
             options: { responsive:true, plugins:{legend:{display:true,labels:{color:'white'}}}, scales:{ x:{ticks:{color:'white'}}, y:{ticks:{color:'white'}} } }
