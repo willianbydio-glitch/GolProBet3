@@ -27,12 +27,30 @@ button {
     cursor: pointer;
     margin-top: 5px;
 }
+.bar-container {
+    background: #334155;
+    width: 100%;
+    height: 20px;
+    border-radius: 10px;
+    margin: 5px 0;
+    overflow: hidden;
+}
+.bar {
+    height: 100%;
+    text-align: right;
+    padding-right: 5px;
+    color: white;
+    font-weight: bold;
+}
+.bar-home { background: #22c55e; }
+.bar-draw { background: #facc15; }
+.bar-away { background: #ef4444; }
 </style>
 </head>
 <body>
 
 <h1>⚽ GolBetPro</h1>
-<p>Jogos ao vivo e do dia com análise automática</p>
+<p>Jogos ao vivo e do dia com análise gráfica</p>
 
 <button onclick="buscarJogos()">Carregar Jogos</button>
 
@@ -41,7 +59,6 @@ button {
 <script>
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
 
-// Função para carregar jogos
 async function buscarJogos() {
     let hoje = new Date();
     let dia = hoje.getDate().toString().padStart(2,'0');
@@ -55,7 +72,6 @@ async function buscarJogos() {
     try {
         const response = await fetch(`${BACKEND_URL}/jogos?date=${hoje}`);
         const data = await response.json();
-
         jogosDiv.innerHTML = "";
 
         data.response
@@ -75,13 +91,11 @@ async function buscarJogos() {
             `;
             jogosDiv.appendChild(card);
         });
-
     } catch (err) {
         jogosDiv.innerHTML = "Erro ao carregar jogos: " + err.message;
     }
 }
 
-// Função para analisar jogo com probabilidades
 async function analisarJogo(homeId, awayId) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
     analiseDiv.innerHTML = "Analisando...";
@@ -96,22 +110,30 @@ async function analisarJogo(homeId, awayId) {
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        const homeGols = homeStats.response?.goals?.for.total.home || 1;
-        const awayGols = awayStats.response?.goals?.against.total.home || 1;
+        const homeAttack = homeStats.response?.fixtures?.played?.home || 1;
+        const homeGoalFor = homeStats.response?.goals?.for?.total?.home || 1;
+        const homeGoalAgainst = homeStats.response?.goals?.against?.total?.home || 1;
 
-        let probHomeWin = Math.min(95, Math.max(5, Math.round(50 + (homeGols - awayGols)*5)));
-        let probAwayWin = Math.min(95, Math.max(5, Math.round(50 + (awayGols - homeGols)*5)));
+        const awayAttack = awayStats.response?.fixtures?.played?.away || 1;
+        const awayGoalFor = awayStats.response?.goals?.for?.total?.away || 1;
+        const awayGoalAgainst = awayStats.response?.goals?.against?.total?.away || 1;
+
+        const expHomeGoals = (homeGoalFor / homeAttack + awayGoalAgainst / awayAttack) / 2;
+        const expAwayGoals = (awayGoalFor / awayAttack + homeGoalAgainst / homeAttack) / 2;
+
+        let probHomeWin = Math.round((expHomeGoals / (expHomeGoals + expAwayGoals)) * 100);
+        let probAwayWin = Math.round((expAwayGoals / (expHomeGoals + expAwayGoals)) * 100);
         let probDraw = 100 - probHomeWin - probAwayWin;
-        if(probDraw < 5) probDraw = 5;
 
-        const overGoals = homeGols + awayGols > 2.5 ? "Over 2.5" : "Under 2.5";
+        const overGoals = (expHomeGoals + expAwayGoals) > 2.5 ? "Over 2.5" : "Under 2.5";
 
+        // HTML gráfico
         analiseDiv.innerHTML = `
             <p><strong>Análise Probabilística:</strong></p>
-            <p>Vitória ${homeStats.team?.name ?? 'Casa'}: ${probHomeWin}%</p>
-            <p>Empate: ${probDraw}%</p>
-            <p>Vitória ${awayStats.team?.name ?? 'Visitante'}: ${probAwayWin}%</p>
-            <p>${overGoals}</p>
+            <p>Over/Under: ${overGoals}</p>
+            <div class="bar-container"><div class="bar bar-home" style="width:${probHomeWin}%">${probHomeWin}% Casa</div></div>
+            <div class="bar-container"><div class="bar bar-draw" style="width:${probDraw}%">${probDraw}% Empate</div></div>
+            <div class="bar-container"><div class="bar bar-away" style="width:${probAwayWin}%">${probAwayWin}% Visitante</div></div>
         `;
     } catch (err) {
         analiseDiv.innerHTML = "Erro na análise: " + err.message;
