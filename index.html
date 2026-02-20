@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GolBetPro - Profissional</title>
+<title>GolBetPro - Profissional (H2H)</title>
 <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; text-align: center; padding: 20px; }
     .card { background: #1e293b; padding: 20px; border-radius: 12px; margin: 15px auto; max-width: 500px; border: 1px solid #334155; }
@@ -15,18 +15,20 @@
     .bar-draw { background: #facc15; color: #1e293b; }
     .bar-away { background: #ef4444; }
     .status-live { color: #22c55e; font-weight: bold; }
+    .error-text { color: #ef4444; font-size: 14px; }
 </style>
 </head>
 <body>
 
 <h1>⚽ GolBetPro</h1>
-<p>Análise probabilística baseada em desempenho real (xG)</p>
+<p>Análise Real: Últimos 5 Jogos + Confronto Direto (H2H)</p>
 
 <button onclick="buscarJogos()">🔄 Carregar Jogos de Hoje</button>
 
 <div id="jogos"></div>
 
 <script>
+// Mantenha a URL do seu backend da Vercel
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
 
 async function buscarJogos() {
@@ -51,63 +53,117 @@ async function buscarJogos() {
         .forEach(jogo => {
             const card = document.createElement("div");
             card.className = "card";
+            // Nota: Removemos leagueId e season, não precisamos mais deles!
             card.innerHTML = `
                 <h3>${jogo.teams.home.name} vs ${jogo.teams.away.name}</h3>
                 <p>Liga: ${jogo.league.name} | <span class="status-live">${jogo.fixture.status.long}</span></p>
                 <p>Placar: <strong>${jogo.goals.home ?? 0} - ${jogo.goals.away ?? 0}</strong></p>
-                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id}, ${jogo.league.id}, ${jogo.league.season})">
-                    📊 Gerar Análise Real
+                <button onclick="analisarJogo(${jogo.teams.home.id}, ${jogo.teams.away.id})">
+                    📊 Analisar Forma & H2H
                 </button>
                 <div id="analise-${jogo.teams.home.id}" style="margin-top:15px;"></div>
             `;
             jogosDiv.appendChild(card);
         });
     } catch (err) {
-        jogosDiv.innerHTML = "Erro de conexão: " + err.message;
+        jogosDiv.innerHTML = "Erro de conexão ao buscar jogos.";
     }
 }
 
-async function analisarJogo(homeId, awayId, leagueId, seasonId) {
+async function analisarJogo(homeId, awayId) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
-    analiseDiv.innerHTML = "Calculando probabilidades...";
+    analiseDiv.innerHTML = "Calculando histórico recente e confronto direto...";
 
     try {
-        // Agora usamos os IDs dinâmicos vindos do jogo selecionado
-        const [homeRes, awayRes] = await Promise.all([
-            fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${leagueId}&season=${seasonId}`),
-            fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${leagueId}&season=${seasonId}`)
+        // Busca simultânea: Últimos 5 jogos do Home, Últimos 5 do Away, e H2H entre eles.
+        // Certifique-se de que sua API na Vercel suporte repassar essas rotas:
+        const [homeRes, awayRes, h2hRes] = await Promise.all([
+            fetch(`${BACKEND_URL}/fixtures?team=${homeId}&last=5`), 
+            fetch(`${BACKEND_URL}/fixtures?team=${awayId}&last=5`),
+            fetch(`${BACKEND_URL}/fixtures/headtohead?h2h=${homeId}-${awayId}`)
         ]);
+
+        if (!homeRes.ok) throw new Error("A rota '/fixtures' não foi encontrada no backend.");
 
         const homeData = await homeRes.json();
         const awayData = await awayRes.json();
+        const h2hData = await h2hRes.json();
 
-        // Extração de dados com "fallback" para evitar divisão por zero
-        const hStats = homeData.response?.fixtures?.played?.total || 1;
-        const aStats = awayData.response?.fixtures?.played?.total || 1;
+        // 1. Função para extrair média de gols dos últimos jogos
+        const calcularMedias = (jogos, teamId) => {
+            if (!jogos || jogos.length === 0) return { marcados: 1, sofridos: 1 };
+            let marcados = 0, sofridos = 0;
+            
+            jogos.forEach(jogo => {
+                if (jogo.teams.home.id === teamId) {
+                    marcados += jogo.goals.home ?? 0;
+                    sofridos += jogo.goals.away ?? 0;
+                } else {
+                    marcados += jogo.goals.away ?? 0;
+                    sofridos += jogo.goals.home ?? 0;
+                }
+            });
+            return {
+                marcados: marcados / jogos.length,
+                sofridos: sofridos / jogos.length
+            };
+        };
 
-        // Média de Gols Marcados e Sofridos
-        const hAttack = (homeData.response?.goals?.for?.total?.total || 0) / hStats;
-        const hDefense = (homeData.response?.goals?.against?.total?.total || 0) / hStats;
-        const aAttack = (awayData.response?.goals?.for?.total?.total || 0) / aStats;
-        const aDefense = (awayData.response?.goals?.against?.total?.total || 0) / aStats;
+        const homeStats = calcularMedias(homeData.response, homeId);
+        const awayStats = calcularMedias(awayData.response, awayId);
 
-        // Gols Esperados (xG) simplificado
-        const expHome = (hAttack + aDefense) / 2;
-        const expAway = (aAttack + hDefense) / 2;
+        // 2. Analisar Confronto Direto (H2H) - Últimos 4 jogos juntos
+        let h2hHomeMarcou = 0, h2hAwayMarcou = 0, pesoH2H = 0;
 
-        // Lógica de Probabilidade (Normalização)
-        // O fator 0.4 simula a margem de empate técnica
-        const sumExp = expHome + expAway + 0.4; 
-        let pHome = Math.round((expHome / sumExp) * 100);
-        let pAway = Math.round((expAway / sumExp) * 100);
+        if (h2hData.response && h2hData.response.length > 0) {
+            const ultimosH2H = h2hData.response.slice(0, 4);
+            ultimosH2H.forEach(jogo => {
+                if (jogo.teams.home.id === homeId) {
+                    h2hHomeMarcou += jogo.goals.home ?? 0;
+                    h2hAwayMarcou += jogo.goals.away ?? 0;
+                } else {
+                    h2hHomeMarcou += jogo.goals.away ?? 0;
+                    h2hAwayMarcou += jogo.goals.home ?? 0;
+                }
+            });
+            h2hHomeMarcou /= ultimosH2H.length;
+            h2hAwayMarcou /= ultimosH2H.length;
+            pesoH2H = 1; // Ativa o peso do confronto direto na matemática
+        }
+
+        // 3. Gols Esperados (xG)
+        // Média cruzada: Ataque do time A contra Defesa do time B
+        let expHome = (homeStats.marcados + awayStats.sofridos) / 2;
+        let expAway = (awayStats.marcados + homeStats.sofridos) / 2;
+
+        // Se houver confronto direto, ele tem grande peso na decisão
+        if (pesoH2H > 0) {
+            expHome = (expHome * 2 + h2hHomeMarcou) / 3;
+            expAway = (expAway * 2 + h2hAwayMarcou) / 3;
+        }
+
+        // Previne divisão por zero
+        expHome = Math.max(expHome, 0.1);
+        expAway = Math.max(expAway, 0.1);
+
+        // 4. Transformar em Probabilidades Reais
+        const diferenca = Math.abs(expHome - expAway);
         
-        // Ajuste caso os dados sejam insuficientes (times novos na liga)
-        if(pHome < 10) pHome = 30; 
-        if(pAway < 10) pAway = 25;
+        // Empate Inteligente: Se os times tem forças muito parecidas, o empate sobe (máx 35%).
+        // Se a diferença for grande, a chance de empate cai (min 15%).
+        let pDraw = Math.max(15, Math.round(34 - (diferenca * 8))); 
+        
+        const sobra = 100 - pDraw; // O restante vai para vitória/derrota
+        const totalExp = expHome + expAway;
 
-        let pDraw = 100 - pHome - pAway;
+        let pHome = Math.round((expHome / totalExp) * sobra);
+        let pAway = Math.round((expAway / totalExp) * sobra);
 
-        const mercado = (expHome + expAway) > 2.2 ? "🔥 Sugestão: Over 2.5 Gols" : "🛡️ Sugestão: Under 2.5 Gols";
+        // Ajuste fino para garantir que a soma seja sempre cravada em 100%
+        pDraw = 100 - pHome - pAway; 
+
+        // 5. Linha de Over/Under baseada em dados reais
+        const mercado = totalExp >= 2.4 ? "🔥 Sugestão: Over 2.5 Gols" : "🛡️ Sugestão: Under 2.5 Gols";
 
         analiseDiv.innerHTML = `
             <hr style="border: 0.5px solid #334155; margin-bottom: 10px;">
@@ -116,8 +172,9 @@ async function analisarJogo(homeId, awayId, leagueId, seasonId) {
             <div class="bar-container"><div class="bar bar-draw" style="width:${pDraw}%">${pDraw}% Empate</div></div>
             <div class="bar-container"><div class="bar bar-away" style="width:${pAway}%">${pAway}% Fora</div></div>
         `;
+
     } catch (err) {
-        analiseDiv.innerHTML = "Erro ao processar estatísticas.";
+        analiseDiv.innerHTML = `<span class="error-text">⚠️ Seu backend na Vercel precisa ter a rota configurada para buscar os últimos jogos. (${err.message})</span>`;
     }
 }
 </script>
