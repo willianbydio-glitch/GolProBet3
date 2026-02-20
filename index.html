@@ -50,7 +50,7 @@ button {
 <body>
 
 <h1>⚽ GolBetPro</h1>
-<p>Jogos ao vivo e do dia com análise gráfica</p>
+<p>Jogos ao vivo e do dia com análise gráfica e probabilística real</p>
 
 <button onclick="buscarJogos()">Carregar Jogos</button>
 
@@ -59,6 +59,7 @@ button {
 <script>
 const BACKEND_URL = "https://gol-pro-bet3-yjk1.vercel.app/api";
 
+// Função para carregar jogos
 async function buscarJogos() {
     let hoje = new Date();
     let dia = hoje.getDate().toString().padStart(2,'0');
@@ -96,13 +97,14 @@ async function buscarJogos() {
     }
 }
 
+// Função para análise probabilística dinâmica
 async function analisarJogo(homeId, awayId) {
     const analiseDiv = document.getElementById(`analise-${homeId}`);
     analiseDiv.innerHTML = "Analisando...";
 
     try {
-        const league = 39; 
-        const season = 2025; 
+        const league = 39; // Exemplo Premier League
+        const season = 2025;
 
         const homeRes = await fetch(`${BACKEND_URL}/estatisticas?team=${homeId}&league=${league}&season=${season}`);
         const homeStats = await homeRes.json();
@@ -110,30 +112,32 @@ async function analisarJogo(homeId, awayId) {
         const awayRes = await fetch(`${BACKEND_URL}/estatisticas?team=${awayId}&league=${league}&season=${season}`);
         const awayStats = await awayRes.json();
 
-        const homeAttack = homeStats.response?.fixtures?.played?.home || 1;
-        const homeGoalFor = homeStats.response?.goals?.for?.total?.home || 1;
-        const homeGoalAgainst = homeStats.response?.goals?.against?.total?.home || 1;
+        // Gols esperados com dados reais
+        const homePlayed = homeStats.response?.fixtures?.played?.total || 1;
+        const homeFor = homeStats.response?.goals?.for?.total?.total || 0;
+        const homeAgainst = homeStats.response?.goals?.against?.total?.total || 0;
 
-        const awayAttack = awayStats.response?.fixtures?.played?.away || 1;
-        const awayGoalFor = awayStats.response?.goals?.for?.total?.away || 1;
-        const awayGoalAgainst = awayStats.response?.goals?.against?.total?.away || 1;
+        const awayPlayed = awayStats.response?.fixtures?.played?.total || 1;
+        const awayFor = awayStats.response?.goals?.for?.total?.total || 0;
+        const awayAgainst = awayStats.response?.goals?.against?.total?.total || 0;
 
-        const expHomeGoals = (homeGoalFor / homeAttack + awayGoalAgainst / awayAttack) / 2;
-        const expAwayGoals = (awayGoalFor / awayAttack + homeGoalAgainst / homeAttack) / 2;
+        const expHome = (homeFor/homePlayed + awayAgainst/awayPlayed)/2;
+        const expAway = (awayFor/awayPlayed + homeAgainst/homePlayed)/2;
 
-        let probHomeWin = Math.round((expHomeGoals / (expHomeGoals + expAwayGoals)) * 100);
-        let probAwayWin = Math.round((expAwayGoals / (expHomeGoals + expAwayGoals)) * 100);
-        let probDraw = 100 - probHomeWin - probAwayWin;
+        // Probabilidades normalizadas e diferentes para cada jogo
+        let probHome = Math.round((expHome / (expHome + expAway + 0.5)) * 100);
+        let probAway = Math.round((expAway / (expHome + expAway + 0.5)) * 100);
+        let probDraw = 100 - probHome - probAway;
 
-        const overGoals = (expHomeGoals + expAwayGoals) > 2.5 ? "Over 2.5" : "Under 2.5";
+        const overGoals = (expHome + expAway) > 2.5 ? "Over 2.5" : "Under 2.5";
 
-        // HTML gráfico
+        // Gráficos coloridos
         analiseDiv.innerHTML = `
             <p><strong>Análise Probabilística:</strong></p>
             <p>Over/Under: ${overGoals}</p>
-            <div class="bar-container"><div class="bar bar-home" style="width:${probHomeWin}%">${probHomeWin}% Casa</div></div>
+            <div class="bar-container"><div class="bar bar-home" style="width:${probHome}%">${probHome}% Casa</div></div>
             <div class="bar-container"><div class="bar bar-draw" style="width:${probDraw}%">${probDraw}% Empate</div></div>
-            <div class="bar-container"><div class="bar bar-away" style="width:${probAwayWin}%">${probAwayWin}% Visitante</div></div>
+            <div class="bar-container"><div class="bar bar-away" style="width:${probAway}%">${probAway}% Visitante</div></div>
         `;
     } catch (err) {
         analiseDiv.innerHTML = "Erro na análise: " + err.message;
