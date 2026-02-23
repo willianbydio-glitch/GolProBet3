@@ -1,154 +1,253 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GolBetPro Elite Ultra</title>
-    <style>
-        /* Reset e Base */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #020617;
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
+<meta charset="UTF-8">
+<title>GolBetPro Elite Ultra</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        .app-container { width: 100%; max-width: 480px; }
+<style>
 
-        h1 { text-align: center; margin-bottom: 20px; font-size: 22px; color: #22c55e; }
+body{
+    font-family: Arial, sans-serif;
+    background:#020617;
+    color:white;
+    padding:20px;
+}
 
-        /* Abas */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn {
-            flex: 1; border: none; padding: 12px; border-radius: 10px;
-            background: #1e293b; color: #94a3b8; font-weight: bold; cursor: pointer;
-        }
-        .tab-btn.active { background: #22c55e; color: white; }
+h1{
+    text-align:center;
+    margin-bottom:25px;
+}
 
-        /* Card do Jogo */
-        .card-jogo {
-            background: #0f172a; border: 1px solid #1e293b;
-            border-radius: 20px; padding: 20px; margin-bottom: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
+button{
+    background:#22c55e;
+    border:none;
+    padding:10px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+    margin:6px;
+}
 
-        .placar-container { text-align: center; margin-bottom: 15px; }
-        .time-nome { font-size: 16px; font-weight: 500; }
-        .gols { font-size: 24px; font-weight: 800; color: #22c55e; margin: 0 15px; }
+button:hover{opacity:.85}
 
-        .status-info { 
-            text-align: center; font-size: 13px; color: #64748b; 
-            margin-bottom: 15px; border-bottom: 1px solid #1e293b; padding-bottom: 10px;
-        }
+.jogo{
+    background:#0f172a;
+    padding:18px;
+    border-radius:12px;
+    margin-bottom:20px;
+    border:1px solid #1e293b;
+}
 
-        /* Caixa de Análise */
-        .analise-grid { background: #1e293b; border-radius: 15px; padding: 15px; }
-        .item-analise { 
-            display: flex; justify-content: space-between; 
-            margin-bottom: 8px; font-size: 14px; 
-        }
-        .item-analise:last-child { margin-bottom: 0; }
-        .valor { font-weight: bold; color: #22c55e; }
+.status{
+    opacity:.8;
+    font-size:14px;
+}
 
-        .btn-estatisticas {
-            display: block; width: 100%; background: #22c55e;
-            color: white; text-align: center; padding: 12px;
-            border-radius: 12px; text-decoration: none; font-weight: bold;
-            margin-top: 15px; transition: 0.3s;
-        }
-    </style>
+.analise{
+    background:#1e293b;
+    padding:12px;
+    border-radius:8px;
+    margin-top:12px;
+}
+
+.forte{color:#22c55e;font-weight:bold}
+.medio{color:#facc15;font-weight:bold}
+.fraco{color:#ef4444;font-weight:bold}
+
+.tabs{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+hr{
+    border:1px solid #334155;
+}
+
+</style>
 </head>
+
 <body>
 
-<div class="app-container">
-    <h1>⚽ GolBetPro Elite</h1>
+<h1>⚽ GolBetPro Elite Ultra</h1>
 
-    <div class="tabs">
-        <button id="btnHoje" class="tab-btn active" onclick="trocarAba('hoje')">📅 Jogos Hoje</button>
-        <button id="btnLive" class="tab-btn" onclick="trocarAba('live')">🔴 Ao Vivo</button>
-    </div>
-
-    <div id="lista-jogos">
-        </div>
+<div class="tabs">
+<button onclick="mostrarAba('hoje')">📅 Jogos Hoje</button>
+<button onclick="mostrarAba('live')">🔴 Jogos Ao Vivo</button>
 </div>
 
+<div id="jogosHoje"></div>
+<div id="jogosLive" style="display:none"></div>
+
 <script>
-    // DADOS DE TESTE (Para você ver funcionando mesmo sem API)
-    const mockGames = [
-        {
-            teams: { home: { name: "Flamengo" }, away: { name: "Palmeiras" } },
-            goals: { home: 2, away: 1 },
-            fixture: { status: { long: "Em Andamento", elapsed: 65 } },
-            analysis: { prediction: "Casa Vence", confidence: "Alta", score: 8.50 },
-            eliteUltra: { zebraRisk: 2, cashoutAdvice: "Manter" }
-        }
-    ];
 
-    let abaAtiva = 'hoje';
+/* ===============================
+ABAS
+=============================== */
 
-    function trocarAba(aba) {
-        abaAtiva = aba;
-        document.getElementById('btnHoje').classList.toggle('active', aba === 'hoje');
-        document.getElementById('btnLive').classList.toggle('active', aba === 'live');
-        carregarInterface();
-    }
+function mostrarAba(aba){
 
-    async function carregarInterface() {
-        const container = document.getElementById('lista-jogos');
-        container.innerHTML = '<p style="text-align:center">Buscando dados...</p>';
+    document.getElementById("jogosHoje").style.display =
+        aba === "hoje" ? "block" : "none";
 
-        try {
-            // Tenta buscar da sua API
-            const response = await fetch(abaAtiva === 'hoje' ? '/api/jogos?date=today' : '/api/jogos?live=all');
-            const data = await response.json();
-            renderizarJogos(data.games || []);
-        } catch (e) {
-            // Se der erro (API offline), mostra os dados de teste para não ficar vazio
-            console.log("Usando dados de demonstração...");
-            renderizarJogos(mockGames);
-        }
-    }
+    document.getElementById("jogosLive").style.display =
+        aba === "live" ? "block" : "none";
+}
 
-    function renderizarJogos(jogos) {
-        const container = document.getElementById('lista-jogos');
-        
-        if (jogos.length === 0) {
-            container.innerHTML = '<p style="text-align:center; opacity:0.5">Nenhum jogo no momento.</p>';
+/* ===============================
+CARREGAR JOGOS HOJE
+=============================== */
+
+async function carregarJogos(){
+
+    try{
+
+        const hoje = new Date().toISOString().split("T")[0];
+
+        const response = await fetch(`/api/jogos?date=${hoje}`);
+        const data = await response.json();
+
+        const container = document.getElementById("jogosHoje");
+        container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
+
+        if(!data.games){
+            container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
             return;
         }
 
-        container.innerHTML = jogos.map(game => `
-            <div class="card-jogo">
-                <div class="placar-container">
-                    <span class="time-nome">${game.teams.home.name}</span>
-                    <span class="gols">${game.goals.home} x ${game.goals.away}</span>
-                    <span class="time-nome">${game.teams.away.name}</span>
+        data.games.forEach(game=>{
+
+            const analysis = game.analysis || {};
+            const elite = game.eliteUltra || {};
+
+            container.innerHTML += `
+            <div class="jogo">
+
+                <h3>
+                    ${game.teams?.home?.name || "Casa"}
+                    ${game.goals?.home ?? 0}
+                    x
+                    ${game.goals?.away ?? 0}
+                    ${game.teams?.away?.name || "Fora"}
+                </h3>
+
+                <div class="status">
+                    ${game.league?.name || ""}
+                    - ${game.fixture?.status?.long || ""}
                 </div>
 
-                <div class="status-info">
-                    ${game.fixture.status.long} ${game.fixture.status.elapsed ? `(${game.fixture.status.elapsed}')` : ''}
+                <div class="analise">
+
+                    <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
+
+                    <p>🔥 Confiança:
+                        <span class="${analysis.score>=80?'forte':analysis.score>=60?'medio':'fraco'}">
+                            ${analysis.confidence || "N/A"}
+                        </span>
+                    </p>
+
+                    <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
+
+                    <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
+
+                    <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
+
                 </div>
 
-                <div class="analise-grid">
-                    <div class="item-analise"><span>🎯 Prognóstico:</span> <span class="valor">${game.analysis.prediction || 'N/A'}</span></div>
-                    <div class="item-analise"><span>🔥 Confiança:</span> <span class="valor">${game.analysis.confidence || 'N/A'}</span></div>
-                    <div class="item-analise"><span>⭐ Score:</span> <span class="valor">${game.analysis.score || '0.00'}</span></div>
-                    <div class="item-analise"><span>🦓 Zebra Risk:</span> <span class="valor">${game.eliteUltra.zebraRisk || 1}/5</span></div>
-                    <div class="item-analise"><span>💰 Cashout:</span> <span class="valor">${game.eliteUltra.cashoutAdvice || 'N/A'}</span></div>
-                </div>
-
-                <a href="#" class="btn-estatisticas">📊 Ver Estatísticas</a>
             </div>
-        `).join('');
-    }
+            `;
+        });
 
-    // Inicializar
-    carregarInterface();
-    // Atualiza a cada 60 segundos
-    setInterval(carregarInterface, 60000);
+    }catch(e){
+        console.error(e);
+    }
+}
+
+/* ===============================
+CARREGAR JOGOS AO VIVO
+=============================== */
+
+async function carregarJogosLive(){
+
+    try{
+
+        const response = await fetch(`/api/jogos?live=all`);
+        const data = await response.json();
+
+        const container = document.getElementById("jogosLive");
+        container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
+
+        if(!data.games || data.games.length === 0){
+            container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
+            return;
+        }
+
+        for(const game of data.games){
+
+            if(game.fixture?.status?.short === "FT") continue;
+
+            const analysis = game.analysis || {};
+            const elite = game.eliteUltra || {};
+
+            container.innerHTML += `
+            <div class="jogo">
+
+                <h3>
+                    🔴 ${game.teams?.home?.name || ""}
+                    ${game.goals?.home ?? 0}
+                    x
+                    ${game.goals?.away ?? 0}
+                    ${game.teams?.away?.name || ""}
+                </h3>
+
+                <div class="status">
+                    ${game.fixture?.status?.long || ""}
+                </div>
+
+                <div class="analise">
+
+                    <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
+
+                    <p>🔥 Confiança:
+                        <span class="${analysis.score>=80?'forte':analysis.score>=60?'medio':'fraco'}">
+                            ${analysis.confidence || "N/A"}
+                        </span>
+                    </p>
+
+                    <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
+
+                    <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
+
+                    <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
+
+                </div>
+
+                <div id="stats-live-${game.fixture?.id}" class="analise">
+                    <button onclick="carregarEstatisticas(${game.fixture?.id})">
+                        📊 Ver Estatísticas
+                    </button>
+                </div>
+
+            </div>
+            `;
+        }
+
+    }catch(e){
+        console.error(e);
+    }
+}
+/* ===============================
+AUTO UPDATE
+=============================== */
+
+carregarJogos();
+carregarJogosLive();
+
+setInterval(()=>{
+    carregarJogos();
+    carregarJogosLive();
+},60000);
+
 </script>
 
 </body>
