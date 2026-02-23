@@ -26,7 +26,7 @@ button{
     border-radius:6px;
     cursor:pointer;
     font-weight:bold;
-    margin:10px 0;
+    margin:6px;
 }
 
 button:hover{opacity:.85}
@@ -55,6 +55,11 @@ button:hover{opacity:.85}
 .medio{color:#facc15;font-weight:bold}
 .fraco{color:#ef4444;font-weight:bold}
 
+.tabs{
+    text-align:center;
+    margin-bottom:20px;
+}
+
 hr{
     border:1px solid #334155;
 }
@@ -66,14 +71,31 @@ hr{
 
 <h1>⚽ GolBetPro Elite Ultra</h1>
 
-<button onclick="carregarJogos()">🔄 Atualizar Jogos</button>
+<div class="tabs">
+<button onclick="mostrarAba('hoje')">📅 Jogos Hoje</button>
+<button onclick="mostrarAba('live')">🔴 Jogos Ao Vivo</button>
+</div>
 
-<div id="jogos">Carregando jogos...</div>
+<div id="jogosHoje"></div>
+<div id="jogosLive" style="display:none"></div>
 
 <script>
 
 /* ===============================
-CARREGAR JOGOS
+ABAS
+=============================== */
+
+function mostrarAba(aba){
+
+    document.getElementById("jogosHoje").style.display =
+        aba === "hoje" ? "block" : "none";
+
+    document.getElementById("jogosLive").style.display =
+        aba === "live" ? "block" : "none";
+}
+
+/* ===============================
+CARREGAR JOGOS HOJE
 =============================== */
 
 async function carregarJogos(){
@@ -85,11 +107,11 @@ async function carregarJogos(){
         const response = await fetch(`/api/jogos?date=${hoje}`);
         const data = await response.json();
 
-        const container = document.getElementById("jogos");
-        container.innerHTML = "";
+        const container = document.getElementById("jogosHoje");
+        container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
 
-        if(!data.games || data.games.length === 0){
-            container.innerHTML = "<p>Nenhum jogo encontrado.</p>";
+        if(!data.games){
+            container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
             return;
         }
 
@@ -98,15 +120,8 @@ async function carregarJogos(){
             const analysis = game.analysis || {};
             const elite = game.eliteUltra || {};
 
-            let classeScore="fraco";
-
-            if(analysis.score >= 80) classeScore="forte";
-            else if(analysis.score >= 60) classeScore="medio";
-
-            const div = document.createElement("div");
-            div.className="jogo";
-
-            div.innerHTML=`
+            container.innerHTML += `
+            <div class="jogo">
 
                 <h3>
                     ${game.teams?.home?.name || "Casa"}
@@ -121,136 +136,78 @@ async function carregarJogos(){
                     - ${game.fixture?.status?.long || ""}
                 </div>
 
-                <button onclick="carregarEstatisticas(${game.fixture?.id})">
-                    📊 Ver Análise Elite Ultra
-                </button>
-
                 <div class="analise">
 
                     <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
 
                     <p>🔥 Confiança:
-                        <span class="${classeScore}">
+                        <span class="${analysis.score>=80?'forte':analysis.score>=60?'medio':'fraco'}">
                             ${analysis.confidence || "N/A"}
                         </span>
                     </p>
 
                     <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
 
-                    <p>🦓 Risco de Zebra: ${elite.zebraRisk || 1}/5</p>
+                    <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
 
                     <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
 
                 </div>
 
-                <div id="stats-${game.fixture?.id}" class="analise"></div>
-
+            </div>
             `;
-
-            container.appendChild(div);
         });
 
     }catch(e){
         console.error(e);
-        document.getElementById("jogos").innerHTML=
-        "<p>Erro ao carregar jogos</p>";
     }
 }
 
 /* ===============================
-ESTATÍSTICAS DO JOGO
+CARREGAR JOGOS AO VIVO
 =============================== */
 
-async function carregarEstatisticas(fixtureId){
-
-    const container = document.getElementById(`stats-${fixtureId}`);
-
-    container.innerHTML="Carregando estatísticas...";
+async function carregarJogosLive(){
 
     try{
 
-        const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
+        const response = await fetch(`/api/jogos?live=all`);
         const data = await response.json();
 
-        if(!data.response){
-            container.innerHTML="Sem estatísticas disponíveis";
+        const container = document.getElementById("jogosLive");
+        container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
+
+        if(!data.games){
+            container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
             return;
         }
 
-        let totalChutes=0;
-        let chutesGol=0;
-        let ambasCheck=0;
+        data.games.forEach(game=>{
 
-        data.response.forEach(team=>{
+            if(game.fixture?.status?.short === "FT") return;
 
-            const stats = team.statistics;
+            container.innerHTML += `
+            <div class="jogo">
 
-            const shots = Number(
-                stats.find(s=>s.type==="Total Shots")?.value || 0
-            );
+                <h3>
+                    🔴
+                    ${game.teams?.home?.name}
+                    ${game.goals?.home ?? 0}
+                    x
+                    ${game.goals?.away ?? 0}
+                    ${game.teams?.away?.name}
+                </h3>
 
-            const shotsGoal = Number(
-                stats.find(s=>s.type==="Shots on Goal")?.value || 0
-            );
+                <div class="status">
+                    ${game.fixture?.status?.long}
+                </div>
 
-            totalChutes+=shots;
-            chutesGol+=shotsGoal;
-
-            if(shotsGoal>=3) ambasCheck++;
-
-            container.innerHTML+=`
-                <h4>${team.team.name}</h4>
-                <ul>
-                    <li>⚽ Chutes: ${shots}</li>
-                    <li>🎯 Chutes no gol: ${shotsGoal}</li>
-                </ul>
+            </div>
             `;
         });
 
-        let overClasse="fraco";
-        let overTexto="Fraco";
-
-        if(totalChutes>=20 || chutesGol>=8){
-            overClasse="forte";
-            overTexto="Forte";
-        }
-        else if(totalChutes>=14){
-            overClasse="medio";
-            overTexto="Moderado";
-        }
-
-        let bttsClasse="fraco";
-        let bttsTexto="Fraco";
-
-        if(ambasCheck===2){
-            bttsClasse="forte";
-            bttsTexto="Forte";
-        }
-        else if(ambasCheck===1){
-            bttsClasse="medio";
-            bttsTexto="Moderado";
-        }
-
-        container.innerHTML+=`
-            <hr>
-
-            <h3>📊 Análise GolBetPro</h3>
-
-            <p>Over 2.5:
-                <span class="${overClasse}">
-                    ${overTexto}
-                </span>
-            </p>
-
-            <p>Ambas Marcam:
-                <span class="${bttsClasse}">
-                    ${bttsTexto}
-                </span>
-            </p>
-        `;
-
     }catch(e){
-        container.innerHTML="Erro ao carregar estatísticas";
+        console.error(e);
     }
 }
 
@@ -259,7 +216,12 @@ AUTO UPDATE
 =============================== */
 
 carregarJogos();
-setInterval(carregarJogos,60000);
+carregarJogosLive();
+
+setInterval(()=>{
+    carregarJogos();
+    carregarJogosLive();
+},60000);
 
 </script>
 
