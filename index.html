@@ -1,232 +1,167 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>GolBetPro Elite Ultra</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolBetPro Elite Ultra</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #020617;
+            color: white;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
 
-<style>
+        h1 { text-align: center; font-size: 24px; margin-bottom: 20px; }
 
-body{
-    font-family: Arial, sans-serif;
-    background:#020617;
-    color:white;
-    padding:24px;
-}
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
 
-h1{
-    text-align:center;
-    margin-bottom:30px;
-}
+        button {
+            background: linear-gradient(45deg, #22c55e, #16a34a);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            flex: 1;
+        }
 
-.tabs{
-    text-align:center;
-    margin-bottom:25px;
-}
+        button:active { transform: scale(0.98); }
 
-button{
-    background:linear-gradient(45deg,#22c55e,#16a34a);
-    border:none;
-    padding:12px 18px;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:bold;
-    color:white;
-    margin:6px;
-}
+        .jogo {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            border: 1px solid #1e293b;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
 
-button:hover{
-    opacity:.9;
-}
+        h3 { margin: 0 0 10px 0; font-size: 18px; text-align: center; }
 
-.jogo{
-    background:#0f172a;
-    padding:22px;
-    border-radius:18px;
-    margin-bottom:24px;
-    border:1px solid #1e293b;
-    box-shadow:0 10px 25px rgba(0,0,0,.4);
-}
+        .status {
+            text-align: center;
+            opacity: 0.7;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
 
-.status{
-    opacity:.85;
-    font-size:14px;
-}
+        .analise {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 14px;
+        }
 
-.analise{
-    background:#1e293b;
-    padding:16px;
-    border-radius:14px;
-    margin-top:16px;
-}
+        .analise p { margin: 8px 0; font-size: 14px; }
 
-.forte{color:#22c55e;font-weight:bold}
-.medio{color:#facc15;font-weight:bold}
-.fraco{color:#ef4444;font-weight:bold}
-
-</style>
+        .btn-stats {
+            display: block;
+            width: 100%;
+            background: #22c55e;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
 </head>
-
 <body>
 
-<h1>⚽ GolBetPro Elite Ultra</h1>
+    <h1>⚽ GolBetPro Elite Ultra</h1>
 
-<div class="tabs">
-<button onclick="mostrarAba('hoje')">📅 Jogos Hoje</button>
-<button onclick="mostrarAba('live')">🔴 Jogos Ao Vivo</button>
-</div>
+    <div class="tabs">
+        <button onclick="mostrarAba('hoje')">📅 Hoje</button>
+        <button onclick="mostrarAba('live')">🔴 Ao Vivo</button>
+    </div>
 
-<div id="jogosHoje"></div>
-<div id="jogosLive" style="display:none"></div>
+    <div id="jogosHoje">
+        <p style="text-align:center; opacity:0.5;">Carregando jogos...</p>
+    </div>
 
-<script>
+    <div id="jogosLive" style="display:none">
+        <p style="text-align:center; opacity:0.5;">Buscando partidas ao vivo...</p>
+    </div>
 
-/* ===============================
-ABAS
-=============================== */
-
-function mostrarAba(aba){
-
-    document.getElementById("jogosHoje").style.display =
-        aba === "hoje" ? "block" : "none";
-
-    document.getElementById("jogosLive").style.display =
-        aba === "live" ? "block" : "none";
-}
-
-/* ===============================
-JOGOS HOJE
-=============================== */
-
-async function carregarJogos(){
-
-    try{
-
-        const hoje = new Date().toISOString().split("T")[0];
-
-        const response = await fetch(`/api/jogos?date=${hoje}`);
-        const data = await response.json();
-
-        const container = document.getElementById("jogosHoje");
-
-        container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
-
-        if(!data.games || data.games.length === 0){
-            container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
-            return;
+    <script>
+        // Alternar entre abas
+        function mostrarAba(aba) {
+            document.getElementById("jogosHoje").style.display = (aba === "hoje") ? "block" : "none";
+            document.getElementById("jogosLive").style.display = (aba === "live") ? "block" : "none";
         }
 
-        data.games.forEach(game=>{
-
+        // Função para criar o HTML de cada card (evita repetição de código)
+        function criarCardJogo(game, isLive = false) {
             const analysis = game.analysis || {};
             const elite = game.eliteUltra || {};
+            const liveIcon = isLive ? "🔴 " : "";
 
-            container.innerHTML += `
-            <div class="jogo">
-
-                <h3>
-                    ${game.teams?.home?.name || ""}
-                    ${game.goals?.home ?? 0}
-                    x
-                    ${game.goals?.away ?? 0}
-                    ${game.teams?.away?.name || ""}
-                </h3>
-
-                <div class="status">
-                    ${game.league?.name || ""} -
-                    ${game.fixture?.status?.long || ""}
+            return `
+                <div class="jogo">
+                    <h3>
+                        ${liveIcon}${game.teams?.home?.name || "Casa"} 
+                        ${game.goals?.home ?? 0} x ${game.goals?.away ?? 0} 
+                        ${game.teams?.away?.name || "Fora"}
+                    </h3>
+                    <div class="status">
+                        ${game.league?.name || ""} ${isLive ? '(' + (game.fixture?.status?.elapsed || 0) + ' min)' : ''}<br>
+                        ${game.fixture?.status?.long || "Agendado"}
+                    </div>
+                    <div class="analise">
+                        <p>🎯 Prognóstico: <b>${analysis.prediction || "N/A"}</b></p>
+                        <p>🔥 Confiança: <b>${analysis.confidence || "N/A"}</b></p>
+                        <p>⭐ Score: <b>${analysis.score?.toFixed(2) || "0.00"}</b></p>
+                        <p>🦓 Zebra Risk: <b>${elite.zebraRisk || 1}/5</b></p>
+                        <p>💰 Cashout: <b>${elite.cashoutAdvice || "Aguardando"}</b></p>
+                    </div>
+                    <a href="#" class="btn-stats">📊 Ver Estatísticas</a>
                 </div>
-
-                <div class="analise">
-                    <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
-                    <p>🔥 Confiança: ${analysis.confidence || "N/A"}</p>
-                    <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
-                    <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
-                    <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
-                </div>
-
-            </div>
-            `;
-        });
-
-    }catch(e){
-        console.error(e);
-    }
-}
-
-/* ===============================
-JOGOS AO VIVO
-=============================== */
-
-async function carregarJogosLive(){
-
-    try{
-
-        const response = await fetch(`/api/jogos?live=all`);
-        const data = await response.json();
-
-        const container = document.getElementById("jogosLive");
-
-        container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
-
-        if(!data.games || data.games.length === 0){
-            container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
-            return;
-        }
-
-        for(const game of data.games){
-
-            if(game.fixture?.status?.short === "FT") continue;
-
-            const analysis = game.analysis || {};
-            const elite = game.eliteUltra || {};
-
-            container.innerHTML += `
-            <div class="jogo">
-
-                <h3>
-                    🔴 ${game.teams?.home?.name || ""}
-                    ${game.goals?.home ?? 0}
-                    x
-                    ${game.goals?.away ?? 0}
-                    ${game.teams?.away?.name || ""}
-                </h3>
-
-                <div class="status">
-                    ${game.fixture?.status?.long || ""}
-                    (${game.fixture?.status?.elapsed || ""} min)
-                </div>
-
-                <div class="analise">
-                    <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
-                    <p>🔥 Confiança: ${analysis.confidence || "N/A"}</p>
-                    <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
-                    <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
-                    <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
-                </div>
-
-            </div>
             `;
         }
 
-    }catch(e){
-        console.error(e);
-    }
-}
+        async function carregarDados() {
+            try {
+                // Nota: Substitua as URLs pelas rotas reais do seu servidor/API
+                const resHoje = await fetch('/api/jogos?date=' + new Date().toISOString().split("T")[0]);
+                const dataHoje = await resHoje.json();
+                
+                const resLive = await fetch('/api/jogos?live=all');
+                const dataLive = await resLive.json();
 
-/* ===============================
-AUTO UPDATE
-=============================== */
+                // Renderizar Hoje
+                const containerHoje = document.getElementById("jogosHoje");
+                containerHoje.innerHTML = "<h2>📅 Jogos de Hoje</h2>";
+                if(dataHoje.games?.length > 0) {
+                    dataHoje.games.forEach(g => containerHoje.innerHTML += criarCardJogo(g));
+                } else {
+                    containerHoje.innerHTML += "<p>Nenhum jogo para hoje.</p>";
+                }
 
-carregarJogos();
-carregarJogosLive();
+                // Renderizar Live
+                const containerLive = document.getElementById("jogosLive");
+                containerLive.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
+                if(dataLive.games?.length > 0) {
+                    dataLive.games.forEach(g => {
+                        if(g.fixture?.status?.short !== "FT") containerLive.innerHTML += criarCardJogo(g, true);
+                    });
+                } else {
+                    containerLive.innerHTML += "<p>Nenhum jogo ao vivo no momento.</p>";
+                }
 
-setInterval(()=>{
-    carregarJogos();
-    carregarJogosLive();
-},60000);
+            } catch (error) {
+                console.error("Erro ao carregar dados:", error);
+            }
+        }
 
-</script>
-
+        // Início e Atualização Automática (cada 60 segundos)
+        carregarDados();
+        setInterval(carregarDados, 60000);
+    </script>
 </body>
 </html>
