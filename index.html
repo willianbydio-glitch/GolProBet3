@@ -1,72 +1,70 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>GolBetPro - Jogos e Estatísticas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>GolBetPro - Motor Inteligente</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      padding: 20px;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+  padding: 20px;
+}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-    .jogo {
-      background: #1e293b;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
+button {
+  background: #22c55e;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 8px;
+}
 
-    .status {
-      font-size: 14px;
-      opacity: 0.8;
-      margin-bottom: 10px;
-    }
+button:hover { opacity: 0.8; }
 
-    button {
-      background: #22c55e;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 8px;
-    }
+.jogo {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
 
-    button:hover {
-      opacity: 0.8;
-    }
+.status {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
 
-    .estatisticas {
-      margin-top: 10px;
-      background: #334155;
-      padding: 10px;
-      border-radius: 6px;
-    }
+.estatisticas {
+  margin-top: 10px;
+  background: #334155;
+  padding: 10px;
+  border-radius: 6px;
+}
 
-    ul {
-      padding-left: 18px;
-    }
-  </style>
+.forte { color: #22c55e; font-weight: bold; }
+.moderado { color: #facc15; font-weight: bold; }
+.fraco { color: #ef4444; font-weight: bold; }
+
+hr { border: 1px solid #475569; }
+</style>
 </head>
 
 <body>
 
-<h1>⚽ GolBetPro - Jogos do Dia</h1>
+<h1>⚽ GolBetPro - Motor Inteligente</h1>
 
 <button onclick="carregarJogos()">Atualizar Jogos</button>
 
-<div id="jogos">
-  Carregando jogos...
-</div>
+<div id="jogos">Carregando jogos...</div>
 
 <script>
 
@@ -75,12 +73,8 @@ async function carregarJogos() {
 
     const hoje = new Date().toISOString().split("T")[0];
     const response = await fetch(`/api/jogos?date=${hoje}`);
-
-    if (!response.ok) {
-      throw new Error("Erro na API");
-    }
-
     const data = await response.json();
+
     const container = document.getElementById("jogos");
     container.innerHTML = "";
 
@@ -108,7 +102,7 @@ async function carregarJogos() {
         </div>
 
         <button onclick="carregarEstatisticas(${jogo.fixture.id})">
-          📊 Ver Estatísticas
+          📊 Ver Estatísticas + Análise
         </button>
 
         <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
@@ -118,20 +112,20 @@ async function carregarJogos() {
     });
 
   } catch (error) {
-    console.error(error);
     document.getElementById("jogos").innerHTML =
-      "<p>❌ Erro ao carregar jogos.</p>";
+      "<p>Erro ao carregar jogos.</p>";
   }
 }
 
 async function carregarEstatisticas(fixtureId) {
+
+  const container = document.getElementById(`stats-${fixtureId}`);
+  container.innerHTML = "Carregando estatísticas...";
+
   try {
 
     const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
     const data = await response.json();
-
-    const container = document.getElementById(`stats-${fixtureId}`);
-    container.innerHTML = "Carregando estatísticas...";
 
     if (!data.response || data.response.length === 0) {
       container.innerHTML = "Sem estatísticas disponíveis.";
@@ -140,37 +134,68 @@ async function carregarEstatisticas(fixtureId) {
 
     container.innerHTML = "";
 
+    let totalChutes = 0;
+    let totalChutesGol = 0;
+    let ambasMarcamCheck = 0;
+
     data.response.forEach(time => {
 
-      const estatisticasFiltradas = time.statistics
-        .filter(stat =>
-          stat.type === "Shots on Goal" ||
-          stat.type === "Total Shots" ||
-          stat.type === "Ball Possession" ||
-          stat.type === "Corner Kicks" ||
-          stat.type === "Yellow Cards" ||
-          stat.type === "Red Cards"
-        );
+      const shots = Number(time.statistics.find(s => s.type === "Total Shots")?.value || 0);
+      const shotsOnGoal = Number(time.statistics.find(s => s.type === "Shots on Goal")?.value || 0);
+      const corners = Number(time.statistics.find(s => s.type === "Corner Kicks")?.value || 0);
 
-      const lista = estatisticasFiltradas
-        .map(stat => `<li>${stat.type}: ${stat.value ?? 0}</li>`)
-        .join("");
+      totalChutes += shots;
+      totalChutesGol += shotsOnGoal;
+
+      if (shotsOnGoal >= 3) ambasMarcamCheck++;
 
       container.innerHTML += `
         <h4>${time.team.name}</h4>
-        <ul>${lista}</ul>
+        <ul>
+          <li>Total Chutes: ${shots}</li>
+          <li>Chutes no Gol: ${shotsOnGoal}</li>
+          <li>Escanteios: ${corners}</li>
+        </ul>
       `;
     });
 
+    // MOTOR DE ANÁLISE
+
+    let overClasse = "fraco";
+    let overTexto = "❌ Fraco";
+
+    if (totalChutes >= 20 || totalChutesGol >= 8) {
+      overClasse = "forte";
+      overTexto = "🔥 Forte";
+    } else if (totalChutes >= 14) {
+      overClasse = "moderado";
+      overTexto = "⚠ Moderado";
+    }
+
+    let bttsClasse = "fraco";
+    let bttsTexto = "❌ Fraco";
+
+    if (ambasMarcamCheck === 2) {
+      bttsClasse = "forte";
+      bttsTexto = "🔥 Forte";
+    } else if (ambasMarcamCheck === 1) {
+      bttsClasse = "moderado";
+      bttsTexto = "⚠ Moderado";
+    }
+
+    container.innerHTML += `
+      <hr>
+      <h3>📊 Análise GolBetPro</h3>
+      <p>Over 2.5: <span class="${overClasse}">${overTexto}</span></p>
+      <p>Ambas Marcam: <span class="${bttsClasse}">${bttsTexto}</span></p>
+    `;
+
   } catch (error) {
-    console.error(error);
+    container.innerHTML = "Erro ao carregar estatísticas.";
   }
 }
 
-// Carrega automaticamente ao abrir
 carregarJogos();
-
-// Atualiza jogos a cada 60 segundos
 setInterval(carregarJogos, 60000);
 
 </script>
