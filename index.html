@@ -29,6 +29,8 @@ h1{
     margin-bottom:25px;
 }
 
+/* Botões */
+
 button{
     background:linear-gradient(45deg,#22c55e,#16a34a);
     border:none;
@@ -47,21 +49,18 @@ button:hover{
     transform:scale(1.03);
 }
 
-/* Card do jogo */
+/* Cards */
 
 .jogo{
     background:#0f172a;
     padding:22px;
     border-radius:18px;
     margin-bottom:24px;
-
     border:1px solid #1e293b;
-
-    box-shadow:
-        0 10px 25px rgba(0,0,0,.4);
+    box-shadow:0 10px 25px rgba(0,0,0,.4);
 }
 
-/* Status do jogo */
+/* Status */
 
 .status{
     opacity:.85;
@@ -69,7 +68,7 @@ button:hover{
     margin-bottom:12px;
 }
 
-/* Painel de análise */
+/* Análise */
 
 .analise{
     background:#1e293b;
@@ -78,24 +77,11 @@ button:hover{
     margin-top:16px;
 }
 
-/* Cores de resultado */
+/* Cores */
 
-.forte{
-    color:#22c55e;
-    font-weight:bold;
-}
-
-.medio{
-    color:#facc15;
-    font-weight:bold;
-}
-
-.fraco{
-    color:#ef4444;
-    font-weight:bold;
-}
-
-/* Separadores */
+.forte{color:#22c55e;font-weight:bold}
+.medio{color:#facc15;font-weight:bold}
+.fraco{color:#ef4444;font-weight:bold}
 
 hr{
     border:1px solid #334155;
@@ -103,6 +89,21 @@ hr{
 }
 
 </style>
+</head>
+
+<body>
+
+<h1>⚽ GolBetPro Elite Ultra</h1>
+
+<div class="tabs">
+<button onclick="mostrarAba('hoje')">📅 Jogos Hoje</button>
+<button onclick="mostrarAba('live')">🔴 Jogos Ao Vivo</button>
+</div>
+
+<div id="jogosHoje"></div>
+<div id="jogosLive" style="display:none"></div>
+
+<script>
 
 /* ===============================
 ABAS
@@ -118,7 +119,7 @@ function mostrarAba(aba){
 }
 
 /* ===============================
-CARREGAR JOGOS HOJE
+JOGOS HOJE
 =============================== */
 
 async function carregarJogos(){
@@ -133,7 +134,7 @@ async function carregarJogos(){
         const container = document.getElementById("jogosHoje");
         container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
 
-        if(!data.games){
+        if(!data.games || data.games.length === 0){
             container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
             return;
         }
@@ -187,7 +188,7 @@ async function carregarJogos(){
 }
 
 /* ===============================
-CARREGAR JOGOS AO VIVO
+JOGOS AO VIVO
 =============================== */
 
 async function carregarJogosLive(){
@@ -205,9 +206,9 @@ async function carregarJogosLive(){
             return;
         }
 
-        for(const game of data.games){
+        data.games.forEach(game=>{
 
-            if(game.fixture?.status?.short === "FT") continue;
+            if(game.fixture?.status?.short === "FT") return;
 
             const analysis = game.analysis || {};
             const elite = game.eliteUltra || {};
@@ -245,20 +246,15 @@ async function carregarJogosLive(){
 
                 </div>
 
-                <div id="stats-live-${game.fixture?.id}" class="analise">
-                    <button onclick="carregarEstatisticas(${game.fixture?.id})">
-                        📊 Ver Estatísticas
-                    </button>
-                </div>
-
             </div>
             `;
-        }
+        });
 
     }catch(e){
         console.error(e);
     }
 }
+
 /* ===============================
 AUTO UPDATE
 =============================== */
