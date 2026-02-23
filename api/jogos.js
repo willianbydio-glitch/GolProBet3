@@ -12,16 +12,26 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const date = req.query.date;
+    let endpoint = "/fixtures";
 
-    if (!date) {
-      return res.status(400).json({
-        error: "Parâmetro 'date' é obrigatório."
-      });
+    // ===============================
+    // LIVE MODE
+    // ===============================
+
+    if (req.query.live === "all") {
+      endpoint = "/fixtures?live=all";
+    }
+
+    // ===============================
+    // DATE MODE
+    // ===============================
+
+    else if (req.query.date) {
+      endpoint = `/fixtures?date=${req.query.date}`;
     }
 
     const response = await fetch(
-      `${BASE_URL}/fixtures?date=${date}`,
+      `${BASE_URL}${endpoint}`,
       {
         headers: {
           "x-apisports-key": API_KEY
@@ -39,10 +49,8 @@ module.exports = async function handler(req, res) {
     });
 
   } catch (err) {
-
     res.status(500).json({
       error: err.message
     });
-
   }
 };
