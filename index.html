@@ -14,21 +14,15 @@ body{
     padding:24px;
 }
 
-/* HEADER */
-
 h1{
     text-align:center;
     margin-bottom:30px;
 }
 
-/* TABS */
-
 .tabs{
     text-align:center;
     margin-bottom:25px;
 }
-
-/* BOTÕES */
 
 button{
     background:linear-gradient(45deg,#22c55e,#16a34a);
@@ -45,8 +39,6 @@ button:hover{
     opacity:.9;
 }
 
-/* CARD JOGO */
-
 .jogo{
     background:#0f172a;
     padding:22px;
@@ -61,8 +53,6 @@ button:hover{
     font-size:14px;
 }
 
-/* ANALISE */
-
 .analise{
     background:#1e293b;
     padding:16px;
@@ -70,16 +60,9 @@ button:hover{
     margin-top:16px;
 }
 
-/* CORES */
-
 .forte{color:#22c55e;font-weight:bold}
 .medio{color:#facc15;font-weight:bold}
 .fraco{color:#ef4444;font-weight:bold}
-
-hr{
-    border:1px solid #334155;
-    margin:18px 0;
-}
 
 </style>
 </head>
@@ -157,15 +140,9 @@ async function carregarJogos(){
                 <div class="analise">
 
                     <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
-
-                    <p>🔥 Confiança:
-                        ${analysis.confidence || "N/A"}
-                    </p>
-
+                    <p>🔥 Confiança: ${analysis.confidence || "N/A"}</p>
                     <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
-
                     <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
-
                     <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
 
                 </div>
@@ -201,7 +178,9 @@ async function carregarJogosLive(){
 
         for(const game of data.games){
 
-            if(game.fixture?.status?.short === "FT") continue;
+            const status = game.fixture?.status?.short;
+
+            if(status === "FT") continue;
 
             const analysis = game.analysis || {};
             const elite = game.eliteUltra || {};
@@ -219,6 +198,7 @@ async function carregarJogosLive(){
 
                 <div class="status">
                     ${game.fixture?.status?.long || ""}
+                    (${game.fixture?.status?.elapsed || ""} min)
                 </div>
 
                 <div class="analise">
