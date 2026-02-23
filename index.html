@@ -177,40 +177,65 @@ async function carregarJogosLive(){
         const container = document.getElementById("jogosLive");
         container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
 
-        if(!data.games){
+        if(!data.games || data.games.length === 0){
             container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
             return;
         }
 
-        data.games.forEach(game=>{
+        for(const game of data.games){
 
-            if(game.fixture?.status?.short === "FT") return;
+            if(game.fixture?.status?.short === "FT") continue;
+
+            const analysis = game.analysis || {};
+            const elite = game.eliteUltra || {};
 
             container.innerHTML += `
             <div class="jogo">
 
                 <h3>
-                    🔴
-                    ${game.teams?.home?.name}
+                    🔴 ${game.teams?.home?.name || ""}
                     ${game.goals?.home ?? 0}
                     x
                     ${game.goals?.away ?? 0}
-                    ${game.teams?.away?.name}
+                    ${game.teams?.away?.name || ""}
                 </h3>
 
                 <div class="status">
-                    ${game.fixture?.status?.long}
+                    ${game.fixture?.status?.long || ""}
+                </div>
+
+                <div class="analise">
+
+                    <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
+
+                    <p>🔥 Confiança:
+                        <span class="${analysis.score>=80?'forte':analysis.score>=60?'medio':'fraco'}">
+                            ${analysis.confidence || "N/A"}
+                        </span>
+                    </p>
+
+                    <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
+
+                    <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
+
+                    <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
+
+                </div>
+
+                <div id="stats-live-${game.fixture?.id}" class="analise">
+                    <button onclick="carregarEstatisticas(${game.fixture?.id})">
+                        📊 Ver Estatísticas
+                    </button>
                 </div>
 
             </div>
             `;
-        });
+        }
 
     }catch(e){
         console.error(e);
     }
 }
-
 /* ===============================
 AUTO UPDATE
 =============================== */
