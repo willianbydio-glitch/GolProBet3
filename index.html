@@ -138,13 +138,11 @@ async function carregarJogos(){
                 </div>
 
                 <div class="analise">
-
                     <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
                     <p>🔥 Confiança: ${analysis.confidence || "N/A"}</p>
                     <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
                     <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
                     <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
-
                 </div>
 
             </div>
@@ -178,9 +176,7 @@ async function carregarJogosLive(){
 
         for(const game of data.games){
 
-            const status = game.fixture?.status?.short;
-
-            if(status === "FT") continue;
+            if(game.fixture?.status?.short === "FT") continue;
 
             const analysis = game.analysis || {};
             const elite = game.eliteUltra || {};
@@ -202,13 +198,11 @@ async function carregarJogosLive(){
                 </div>
 
                 <div class="analise">
-
                     <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
                     <p>🔥 Confiança: ${analysis.confidence || "N/A"}</p>
                     <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
                     <p>🦓 Zebra Risk: ${elite.zebraRisk || 1}/5</p>
                     <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
-
                 </div>
 
             </div>
