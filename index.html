@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>GolBetPro - Jogos ao Vivo</title>
+  <title>GolBetPro - Jogos e Estatísticas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -28,39 +28,52 @@
     .status {
       font-size: 14px;
       opacity: 0.8;
+      margin-bottom: 10px;
     }
 
     button {
       background: #22c55e;
       border: none;
-      padding: 10px 15px;
+      padding: 8px 12px;
       border-radius: 5px;
       cursor: pointer;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin-top: 8px;
     }
 
     button:hover {
       opacity: 0.8;
+    }
+
+    .estatisticas {
+      margin-top: 10px;
+      background: #334155;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    ul {
+      padding-left: 18px;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>⚽ GolBetPro - Jogos do Dia</h1>
+<h1>⚽ GolBetPro - Jogos do Dia</h1>
 
-  <button onclick="carregarJogos()">Atualizar Jogos</button>
+<button onclick="carregarJogos()">Atualizar Jogos</button>
 
-  <div id="jogos">
-    Carregando jogos...
-  </div>
+<div id="jogos">
+  Carregando jogos...
+</div>
 
 <script>
+
 async function carregarJogos() {
   try {
-    const hoje = new Date().toISOString().split("T")[0];
 
+    const hoje = new Date().toISOString().split("T")[0];
     const response = await fetch(`/api/jogos?date=${hoje}`);
 
     if (!response.ok) {
@@ -68,7 +81,6 @@ async function carregarJogos() {
     }
 
     const data = await response.json();
-
     const container = document.getElementById("jogos");
     container.innerHTML = "";
 
@@ -90,9 +102,16 @@ async function carregarJogos() {
           ${jogo.goals.away ?? 0}
           ${jogo.teams.away.name}
         </h3>
+
         <div class="status">
-          Status: ${jogo.fixture.status.long}
+          ${jogo.league.name} - ${jogo.fixture.status.long}
         </div>
+
+        <button onclick="carregarEstatisticas(${jogo.fixture.id})">
+          📊 Ver Estatísticas
+        </button>
+
+        <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
       `;
 
       container.appendChild(div);
@@ -105,10 +124,53 @@ async function carregarJogos() {
   }
 }
 
+async function carregarEstatisticas(fixtureId) {
+  try {
+
+    const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
+    const data = await response.json();
+
+    const container = document.getElementById(`stats-${fixtureId}`);
+    container.innerHTML = "Carregando estatísticas...";
+
+    if (!data.response || data.response.length === 0) {
+      container.innerHTML = "Sem estatísticas disponíveis.";
+      return;
+    }
+
+    container.innerHTML = "";
+
+    data.response.forEach(time => {
+
+      const estatisticasFiltradas = time.statistics
+        .filter(stat =>
+          stat.type === "Shots on Goal" ||
+          stat.type === "Total Shots" ||
+          stat.type === "Ball Possession" ||
+          stat.type === "Corner Kicks" ||
+          stat.type === "Yellow Cards" ||
+          stat.type === "Red Cards"
+        );
+
+      const lista = estatisticasFiltradas
+        .map(stat => `<li>${stat.type}: ${stat.value ?? 0}</li>`)
+        .join("");
+
+      container.innerHTML += `
+        <h4>${time.team.name}</h4>
+        <ul>${lista}</ul>
+      `;
+    });
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 // Carrega automaticamente ao abrir
 carregarJogos();
 
-// Atualiza a cada 60 segundos
+// Atualiza jogos a cada 60 segundos
 setInterval(carregarJogos, 60000);
 
 </script>
