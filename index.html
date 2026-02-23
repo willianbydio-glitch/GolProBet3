@@ -2,201 +2,237 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>GolBetPro - Motor Inteligente</title>
+<title>GolBetPro Elite - Motor Inteligente</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: white;
-  padding: 20px;
+body{
+    font-family: Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+    padding:20px;
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
+h1{text-align:center}
+
+button{
+    background:#22c55e;
+    border:none;
+    padding:10px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+    margin:8px 0;
 }
 
-button {
-  background: #22c55e;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  margin-top: 8px;
+button:hover{opacity:.85}
+
+.jogo{
+    background:#1e293b;
+    padding:16px;
+    border-radius:10px;
+    margin-bottom:18px;
 }
 
-button:hover { opacity: 0.8; }
-
-.jogo {
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
+.status{
+    font-size:14px;
+    opacity:.8;
+    margin-bottom:10px;
 }
 
-.status {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 10px;
+.analise{
+    background:#334155;
+    padding:12px;
+    border-radius:8px;
+    margin-top:12px;
 }
 
-.estatisticas {
-  margin-top: 10px;
-  background: #334155;
-  padding: 10px;
-  border-radius: 6px;
-}
+.forte{color:#22c55e;font-weight:bold}
+.medio{color:#facc15;font-weight:bold}
+.fraco{color:#ef4444;font-weight:bold}
 
-.forte { color: #22c55e; font-weight: bold; }
-.moderado { color: #facc15; font-weight: bold; }
-.fraco { color: #ef4444; font-weight: bold; }
-
-hr { border: 1px solid #475569; }
+hr{border:1px solid #475569}
 </style>
 </head>
 
 <body>
 
-<h1>⚽ GolBetPro - Motor Inteligente</h1>
+<h1>⚽ GolBetPro Elite</h1>
 
-<button onclick="carregarJogos()">Atualizar Jogos</button>
+<button onclick="carregarJogos()">🔄 Atualizar Jogos</button>
 
 <div id="jogos">Carregando jogos...</div>
 
 <script>
 
-async function carregarJogos() {
-  try {
+/* ================================
+CARREGAR JOGOS
+================================ */
 
-    const hoje = new Date().toISOString().split("T")[0];
-    const response = await fetch(`/api/jogos?date=${hoje}`);
-    const data = await response.json();
+async function carregarJogos(){
 
-    const container = document.getElementById("jogos");
-    container.innerHTML = "";
+    try{
 
-    if (!data.response || data.response.length === 0) {
-      container.innerHTML = "<p>Nenhum jogo encontrado.</p>";
-      return;
+        const hoje = new Date().toISOString().split("T")[0];
+
+        const response = await fetch(`/api/jogos?date=${hoje}`);
+        const data = await response.json();
+
+        const container = document.getElementById("jogos");
+        container.innerHTML = "";
+
+        if(!data.games || data.games.length === 0){
+            container.innerHTML = "<p>Nenhum jogo encontrado.</p>";
+            return;
+        }
+
+        data.games.forEach(game=>{
+
+            const analysis = game.analysis || {};
+
+            let classeScore = "fraco";
+
+            if(analysis.score >= 80) classeScore="forte";
+            else if(analysis.score >= 60) classeScore="medio";
+
+            const div = document.createElement("div");
+
+            div.className="jogo";
+
+            div.innerHTML=`
+                <h3>
+                    ${game.teams?.home?.name || "Casa"}
+                    ${game.goals?.home ?? 0}
+                    x
+                    ${game.goals?.away ?? 0}
+                    ${game.teams?.away?.name || "Fora"}
+                </h3>
+
+                <div class="status">
+                    ${game.league?.name || ""}
+                    - ${game.fixture?.status?.long || ""}
+                </div>
+
+                <button onclick="carregarEstatisticas(${game.fixture?.id})">
+                    📊 Ver Análise Elite
+                </button>
+
+                <div class="analise">
+                    <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
+                    <p>🔥 Confiança: 
+                        <span class="${classeScore}">
+                            ${analysis.confidence || "N/A"}
+                        </span>
+                    </p>
+                    <p>⭐ Score: ${analysis.score?.toFixed(2) || 0}</p>
+                </div>
+
+                <div id="stats-${game.fixture?.id}" class="analise"></div>
+            `;
+
+            container.appendChild(div);
+        });
+
+    }catch(e){
+        console.error(e);
+        document.getElementById("jogos").innerHTML=
+        "<p>Erro ao carregar jogos.</p>";
     }
-
-    data.response.forEach(jogo => {
-
-      const div = document.createElement("div");
-      div.className = "jogo";
-
-      div.innerHTML = `
-        <h3>
-          ${jogo.teams.home.name}
-          ${jogo.goals.home ?? 0}
-          x
-          ${jogo.goals.away ?? 0}
-          ${jogo.teams.away.name}
-        </h3>
-
-        <div class="status">
-          ${jogo.league.name} - ${jogo.fixture.status.long}
-        </div>
-
-        <button onclick="carregarEstatisticas(${jogo.fixture.id})">
-          📊 Ver Estatísticas + Análise
-        </button>
-
-        <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
-      `;
-
-      container.appendChild(div);
-    });
-
-  } catch (error) {
-    document.getElementById("jogos").innerHTML =
-      "<p>Erro ao carregar jogos.</p>";
-  }
 }
 
-async function carregarEstatisticas(fixtureId) {
+/* ================================
+ESTATÍSTICAS DO JOGO
+================================ */
 
-  const container = document.getElementById(`stats-${fixtureId}`);
-  container.innerHTML = "Carregando estatísticas...";
+async function carregarEstatisticas(fixtureId){
 
-  try {
+    const container = document.getElementById(`stats-${fixtureId}`);
 
-    const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
-    const data = await response.json();
+    container.innerHTML="Carregando estatísticas...";
 
-    if (!data.response || data.response.length === 0) {
-      container.innerHTML = "Sem estatísticas disponíveis.";
-      return;
+    try{
+
+        const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
+        const data = await response.json();
+
+        if(!data.response){
+            container.innerHTML="Sem estatísticas disponíveis";
+            return;
+        }
+
+        let totalChutes=0;
+        let chutesGol=0;
+        let ambasCheck=0;
+
+        data.response.forEach(team=>{
+
+            const stats = team.statistics;
+
+            const shots = Number(
+                stats.find(s=>s.type==="Total Shots")?.value || 0
+            );
+
+            const shotsGoal = Number(
+                stats.find(s=>s.type==="Shots on Goal")?.value || 0
+            );
+
+            totalChutes+=shots;
+            chutesGol+=shotsGoal;
+
+            if(shotsGoal>=3) ambasCheck++;
+
+            container.innerHTML+=`
+                <h4>${team.team.name}</h4>
+                <ul>
+                    <li>⚽ Chutes: ${shots}</li>
+                    <li>🎯 Chutes no gol: ${shotsGoal}</li>
+                </ul>
+            `;
+        });
+
+        let overClasse="fraco";
+        let overTexto="Fraco";
+
+        if(totalChutes>=20 || chutesGol>=8){
+            overClasse="forte";
+            overTexto="Forte";
+        }
+        else if(totalChutes>=14){
+            overClasse="medio";
+            overTexto="Moderado";
+        }
+
+        let bttsClasse="fraco";
+        let bttsTexto="Fraco";
+
+        if(ambasCheck===2){
+            bttsClasse="forte";
+            bttsTexto="Forte";
+        }
+        else if(ambasCheck===1){
+            bttsClasse="medio";
+            bttsTexto="Moderado";
+        }
+
+        container.innerHTML+=`
+            <hr>
+            <h3>📊 Análise GolBetPro</h3>
+
+            <p>Over 2.5: <span class="${overClasse}">${overTexto}</span></p>
+            <p>Ambas Marcam: <span class="${bttsClasse}">${bttsTexto}</span></p>
+        `;
+
+    }catch(e){
+        container.innerHTML="Erro ao carregar estatísticas";
     }
-
-    container.innerHTML = "";
-
-    let totalChutes = 0;
-    let totalChutesGol = 0;
-    let ambasMarcamCheck = 0;
-
-    data.response.forEach(time => {
-
-      const shots = Number(time.statistics.find(s => s.type === "Total Shots")?.value || 0);
-      const shotsOnGoal = Number(time.statistics.find(s => s.type === "Shots on Goal")?.value || 0);
-      const corners = Number(time.statistics.find(s => s.type === "Corner Kicks")?.value || 0);
-
-      totalChutes += shots;
-      totalChutesGol += shotsOnGoal;
-
-      if (shotsOnGoal >= 3) ambasMarcamCheck++;
-
-      container.innerHTML += `
-        <h4>${time.team.name}</h4>
-        <ul>
-          <li>Total Chutes: ${shots}</li>
-          <li>Chutes no Gol: ${shotsOnGoal}</li>
-          <li>Escanteios: ${corners}</li>
-        </ul>
-      `;
-    });
-
-    // MOTOR DE ANÁLISE
-
-    let overClasse = "fraco";
-    let overTexto = "❌ Fraco";
-
-    if (totalChutes >= 20 || totalChutesGol >= 8) {
-      overClasse = "forte";
-      overTexto = "🔥 Forte";
-    } else if (totalChutes >= 14) {
-      overClasse = "moderado";
-      overTexto = "⚠ Moderado";
-    }
-
-    let bttsClasse = "fraco";
-    let bttsTexto = "❌ Fraco";
-
-    if (ambasMarcamCheck === 2) {
-      bttsClasse = "forte";
-      bttsTexto = "🔥 Forte";
-    } else if (ambasMarcamCheck === 1) {
-      bttsClasse = "moderado";
-      bttsTexto = "⚠ Moderado";
-    }
-
-    container.innerHTML += `
-      <hr>
-      <h3>📊 Análise GolBetPro</h3>
-      <p>Over 2.5: <span class="${overClasse}">${overTexto}</span></p>
-      <p>Ambas Marcam: <span class="${bttsClasse}">${bttsTexto}</span></p>
-    `;
-
-  } catch (error) {
-    container.innerHTML = "Erro ao carregar estatísticas.";
-  }
 }
+
+/* ================================
+AUTO UPDATE
+================================ */
 
 carregarJogos();
-setInterval(carregarJogos, 60000);
+setInterval(carregarJogos,60000);
 
 </script>
 
