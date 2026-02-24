@@ -1,5 +1,7 @@
 const MasterEngine = require("../engine/masterEngine");
 const CacheEngine = require("../engine/cacheEngine");
+const AdaptiveEngine = require("../engine/adaptiveEngine");
+
 const fetch = require("node-fetch");
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
@@ -16,7 +18,7 @@ module.exports = async function handler(req, res) {
     }
 
     /* ===============================
-    CACHE CHECK
+    CACHE ENGINE
     =============================== */
 
     if (CacheEngine.isValid()) {
@@ -48,6 +50,10 @@ module.exports = async function handler(req, res) {
 
       try {
 
+        /* ===============================
+        MASTER ENGINE
+        =============================== */
+
         const momentum = MasterEngine.calculateMomentum(game);
         const zebra = MasterEngine.zebraDetector(game);
         const probability = MasterEngine.probabilityModel(game);
@@ -57,6 +63,16 @@ module.exports = async function handler(req, res) {
           zebra,
           probability
         };
+
+        /* ===============================
+        ADAPTIVE ENGINE
+        =============================== */
+
+        const adaptiveProbability =
+          AdaptiveEngine.adjustProbability(game);
+
+        game.masterEdition.adaptiveProbability =
+          adaptiveProbability;
 
       } catch (e) {}
 
