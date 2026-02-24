@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
 
     const cacheResponse = {
       success: true,
-      games
+      response: games
     };
 
     /* ===============================
