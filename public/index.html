@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* Estilos preservados do GolBetPro original */
 body {
   font-family: Arial, sans-serif;
   background: #0f172a;
@@ -73,11 +72,11 @@ hr { border:1px solid #475569; }
 </div>
 
 <script>
-// Mantendo toda a inteligência do Motor Elite original
 let rankingGlobal = [];
 
 async function carregarJogos(){
   rankingGlobal = [];
+
   try{
     const hoje = new Date().toISOString().split("T")[0];
     const response = await fetch(`/api/jogos?date=${hoje}`);
@@ -94,6 +93,7 @@ async function carregarJogos(){
     data.response.forEach(jogo=>{
       const div = document.createElement("div");
       div.className = "jogo";
+
       div.innerHTML = `
         <h3>
           ${jogo.teams.home.name}
@@ -102,22 +102,28 @@ async function carregarJogos(){
           ${jogo.goals.away ?? 0}
           ${jogo.teams.away.name}
         </h3>
+
         <div class="status">
           ${jogo.league.name} - ${jogo.fixture.status.long}
         </div>
+
         <button onclick="carregarEstatisticas(${jogo.fixture.id})">
           📊 Ver Estatísticas + Análise
         </button>
+
         <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
       `;
+
       container.appendChild(div);
     });
+
   }catch(e){
     document.getElementById("jogos").innerHTML = "Erro ao carregar jogos.";
   }
 }
 
 async function carregarEstatisticas(fixtureId){
+
   const container = document.getElementById(`stats-${fixtureId}`);
   container.innerHTML = "Carregando estatísticas...";
 
@@ -125,27 +131,43 @@ async function carregarEstatisticas(fixtureId){
     const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
     const data = await response.json();
 
-    if(!data.response || data.response.length === 0){
-      container.innerHTML = "Sem estatísticas disponíveis.";
+    if(!data.response){
+      container.innerHTML = "";
       return;
     }
 
     container.innerHTML = "";
-    let totalChutes=0, totalChutesGol=0, totalEscanteios=0;
-    let ambas=0;
-    let pressaoCasa=0, pressaoFora=0;
+
+    let totalChutes=0,
+        totalChutesGol=0,
+        totalEscanteios=0,
+        ambas=0,
+        pressaoCasa=0,
+        pressaoFora=0;
 
     data.response.forEach((time,index)=>{
-      const shots = Number(time.statistics.find(s=>s.type==="Total Shots")?.value || 0);
-      const shotsOnGoal = Number(time.statistics.find(s=>s.type==="Shots on Goal")?.value || 0);
-      const corners = Number(time.statistics.find(s=>s.type==="Corner Kicks")?.value || 0);
+
+      const shots = Number(
+        time.statistics.find(s=>s.type==="Total Shots")?.value || 0
+      );
+
+      const shotsOnGoal = Number(
+        time.statistics.find(s=>s.type==="Shots on Goal")?.value || 0
+      );
+
+      const corners = Number(
+        time.statistics.find(s=>s.type==="Corner Kicks")?.value || 0
+      );
 
       totalChutes+=shots;
       totalChutesGol+=shotsOnGoal;
       totalEscanteios+=corners;
 
       if(shotsOnGoal>=3) ambas++;
-      const intensidadeTime = (shots*0.5)+(shotsOnGoal*1.5)+(corners*0.3);
+
+      const intensidadeTime =
+        (shots*0.5)+(shotsOnGoal*1.5)+(corners*0.3);
+
       if(index===0) pressaoCasa=intensidadeTime;
       else pressaoFora=intensidadeTime;
 
@@ -159,17 +181,30 @@ async function carregarEstatisticas(fixtureId){
       `;
     });
 
-    const intensidadeBase = (totalChutes*0.4)+(totalChutesGol*1.4)+(totalEscanteios*0.3);
-    const multiplicador = 1 + (totalChutesGol>=6?0.15:0) + (totalEscanteios>=8?0.1:0);
+    const intensidadeBase =
+      (totalChutes*0.4)+(totalChutesGol*1.4)+(totalEscanteios*0.3);
+
+    const multiplicador =
+      1 +
+      (totalChutesGol>=6?0.15:0) +
+      (totalEscanteios>=8?0.1:0);
+
     const intensidadeFinal = intensidadeBase*multiplicador;
-    const xG = (totalChutesGol*0.32)+(totalChutes*0.05);
+
+    const xG =
+      (totalChutesGol*0.32)+(totalChutes*0.05);
 
     let probOver=Math.min(95,(intensidadeFinal/35)*100);
     let probBTTS=Math.min(95,ambas*45);
-    let score = Math.min(100, Math.round((probOver*0.55)+(probBTTS*0.30)+(xG*5)));
+
+    let score =
+      Math.min(100,
+        Math.round((probOver*0.55)+(probBTTS*0.30)+(xG*5))
+      );
 
     let momentum="⚪ Equilibrado";
     let momentumClasse="";
+
     if(pressaoCasa>pressaoFora*1.4){
       momentum="🏠 Pressão Casa";
       momentumClasse="forte";
@@ -182,11 +217,13 @@ async function carregarEstatisticas(fixtureId){
     }
 
     let recomendacao="❌ Baixa oportunidade";
+
     if(score>=80) recomendacao="🔥 ENTRADA FORTE";
     else if(score>=60) recomendacao="⚠ Boa oportunidade";
 
     rankingGlobal.push({fixtureId,score});
     rankingGlobal.sort((a,b)=>b.score-a.score);
+
     atualizarRanking();
 
     container.innerHTML+=`
@@ -199,6 +236,7 @@ async function carregarEstatisticas(fixtureId){
       <p>${momentumClasse?`<span class="${momentumClasse}">${momentum}</span>`:momentum}</p>
       <h3>${recomendacao}</h3>
     `;
+
   }catch(e){
     container.innerHTML="Erro ao carregar estatísticas.";
   }
@@ -206,7 +244,9 @@ async function carregarEstatisticas(fixtureId){
 
 function atualizarRanking(){
   const div=document.getElementById("ranking");
+
   div.innerHTML="";
+
   rankingGlobal.slice(0,5).forEach((j,i)=>{
     div.innerHTML+=`<p>${i+1}º - Jogo ${j.fixtureId} ⭐ ${j.score}/100</p>`;
   });
