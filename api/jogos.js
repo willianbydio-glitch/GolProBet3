@@ -15,18 +15,12 @@ module.exports = async function handler(req, res) {
 
     let endpoint = "/fixtures";
 
-    // ===============================
     // LIVE MODE
-    // ===============================
-
     if (req.query.live === "all") {
       endpoint = "/fixtures?live=all";
     }
 
-    // ===============================
     // DATE MODE
-    // ===============================
-
     else if (req.query.date) {
       endpoint = `/fixtures?date=${req.query.date}`;
     }
@@ -42,7 +36,25 @@ module.exports = async function handler(req, res) {
 
     const apiData = await response.json();
 
-    const games = apiData.response || [];
+    const games = (apiData.response || []).map(game => {
+
+      try {
+
+        const momentum = MasterEngine.calculateMomentum(game);
+        const zebra = MasterEngine.zebraDetector(game);
+        const probability = MasterEngine.probabilityModel(game);
+
+        game.masterEdition = {
+          momentum,
+          zebra,
+          probability
+        };
+
+      } catch (e) {}
+
+      return game;
+
+    });
 
     res.status(200).json({
       success: true,
@@ -50,8 +62,10 @@ module.exports = async function handler(req, res) {
     });
 
   } catch (err) {
+
     res.status(500).json({
       error: err.message
     });
+
   }
 };
