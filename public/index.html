@@ -1,123 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>GolBetPro - Motor Inteligente</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+button {
+  background: #22c55e;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+button:hover { opacity: 0.8; }
+
+.jogo {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.status {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.estatisticas {
+  margin-top: 10px;
+  background: #334155;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.forte { color: #22c55e; font-weight: bold; }
+.moderado { color: #facc15; font-weight: bold; }
+.fraco { color: #ef4444; font-weight: bold; }
+
+hr { border: 1px solid #475569; }
+</style>
+</head>
+
+<body>
+
+<h1>⚽ GolBetPro - Motor Inteligente</h1>
+
+<button onclick="carregarJogos()">Atualizar Jogos</button>
+
+<div id="jogos">Carregando jogos...</div>
+
 <script>
 
-// ===============================
-// MOSTRAR ABAS
-// ===============================
-function mostrarAba(aba) {
-  document.getElementById("jogosHoje").style.display =
-    aba === "hoje" ? "block" : "none";
-
-  document.getElementById("jogosLive").style.display =
-    aba === "live" ? "block" : "none";
-}
-
-// ===============================
-// CRIAR CARD (GENÉRICO)
-// ===============================
-function criarCard(game, isLive = false) {
-
-  const home = game.teams?.home?.name || "";
-  const away = game.teams?.away?.name || "";
-
-  const homeGoals = game.goals?.home ?? 0;
-  const awayGoals = game.goals?.away ?? 0;
-
-  const statusLong = game.fixture?.status?.long || "";
-  const elapsed = game.fixture?.status?.elapsed || "";
-
-  return `
-    <div class="jogo">
-
-        <h3>
-          ${isLive ? "🔴" : ""} ${home} ${homeGoals} x ${awayGoals} ${away}
-        </h3>
-
-        <div class="status">
-          ${statusLong} ${isLive && elapsed ? `(${elapsed} min)` : ""}
-        </div>
-
-    </div>
-  `;
-}
-
-// ===============================
-// CARREGAR JOGOS DE HOJE
-// ===============================
 async function carregarJogos() {
   try {
 
     const hoje = new Date().toISOString().split("T")[0];
     const response = await fetch(`/api/jogos?date=${hoje}`);
-
-    if (!response.ok) {
-      console.error("Erro ao buscar jogos:", response.status);
-      return;
-    }
-
     const data = await response.json();
-    const container = document.getElementById("jogosHoje");
 
-    container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
+    const container = document.getElementById("jogos");
+    container.innerHTML = "";
 
-    if (!data.response || !Array.isArray(data.response)) {
-      container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
+    if (!data.response || data.response.length === 0) {
+      container.innerHTML = "<p>Nenhum jogo encontrado.</p>";
       return;
     }
 
-    data.response.forEach(game => {
-      container.innerHTML += criarCard(game, false);
+    data.response.forEach(jogo => {
+
+      const div = document.createElement("div");
+      div.className = "jogo";
+
+      div.innerHTML = `
+        <h3>
+          ${jogo.teams.home.name}
+          ${jogo.goals.home ?? 0}
+          x
+          ${jogo.goals.away ?? 0}
+          ${jogo.teams.away.name}
+        </h3>
+
+        <div class="status">
+          ${jogo.league.name} - ${jogo.fixture.status.long}
+        </div>
+
+        <button onclick="carregarEstatisticas(${jogo.fixture.id})">
+          📊 Ver Estatísticas + Análise
+        </button>
+
+        <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
+      `;
+
+      container.appendChild(div);
     });
 
-  } catch (err) {
-    console.error("Erro em carregarJogos:", err);
+  } catch (error) {
+    document.getElementById("jogos").innerHTML =
+      "<p>Erro ao carregar jogos.</p>";
   }
 }
 
-// ===============================
-// CARREGAR JOGOS AO VIVO
-// ===============================
-async function carregarJogosLive() {
+async function carregarEstatisticas(fixtureId) {
+
+  const container = document.getElementById(`stats-${fixtureId}`);
+  container.innerHTML = "Carregando estatísticas...";
+
   try {
 
-    const response = await fetch(`/api/jogos?live=all`);
-
-    if (!response.ok) {
-      console.error("Erro ao buscar jogos ao vivo:", response.status);
-      return;
-    }
-
+    const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
     const data = await response.json();
-    const container = document.getElementById("jogosLive");
 
-    container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
-
-    if (!data.response || !Array.isArray(data.response)) {
-      container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
+    if (!data.response || data.response.length === 0) {
+      container.innerHTML = "Sem estatísticas disponíveis.";
       return;
     }
 
-    data.response.forEach(game => {
-      if (game.fixture?.status?.short !== "FT") {
-        container.innerHTML += criarCard(game, true);
-      }
+    container.innerHTML = "";
+
+    let totalChutes = 0;
+    let totalChutesGol = 0;
+    let ambasMarcamCheck = 0;
+
+    data.response.forEach(time => {
+
+      const shots = Number(time.statistics.find(s => s.type === "Total Shots")?.value || 0);
+      const shotsOnGoal = Number(time.statistics.find(s => s.type === "Shots on Goal")?.value || 0);
+      const corners = Number(time.statistics.find(s => s.type === "Corner Kicks")?.value || 0);
+
+      totalChutes += shots;
+      totalChutesGol += shotsOnGoal;
+
+      if (shotsOnGoal >= 3) ambasMarcamCheck++;
+
+      container.innerHTML += `
+        <h4>${time.team.name}</h4>
+        <ul>
+          <li>Total Chutes: ${shots}</li>
+          <li>Chutes no Gol: ${shotsOnGoal}</li>
+          <li>Escanteios: ${corners}</li>
+        </ul>
+      `;
     });
 
-  } catch (err) {
-    console.error("Erro em carregarJogosLive:", err);
+    // MOTOR DE ANÁLISE
+
+    let overClasse = "fraco";
+    let overTexto = "❌ Fraco";
+
+    if (totalChutes >= 20 || totalChutesGol >= 8) {
+      overClasse = "forte";
+      overTexto = "🔥 Forte";
+    } else if (totalChutes >= 14) {
+      overClasse = "moderado";
+      overTexto = "⚠ Moderado";
+    }
+
+    let bttsClasse = "fraco";
+    let bttsTexto = "❌ Fraco";
+
+    if (ambasMarcamCheck === 2) {
+      bttsClasse = "forte";
+      bttsTexto = "🔥 Forte";
+    } else if (ambasMarcamCheck === 1) {
+      bttsClasse = "moderado";
+      bttsTexto = "⚠ Moderado";
+    }
+
+    container.innerHTML += `
+      <hr>
+      <h3>📊 Análise GolBetPro</h3>
+      <p>Over 2.5: <span class="${overClasse}">${overTexto}</span></p>
+      <p>Ambas Marcam: <span class="${bttsClasse}">${bttsTexto}</span></p>
+    `;
+
+  } catch (error) {
+    container.innerHTML = "Erro ao carregar estatísticas.";
   }
 }
 
-// ===============================
-// AUTO UPDATE
-// ===============================
-document.addEventListener("DOMContentLoaded", () => {
-  carregarJogos();
-  carregarJogosLive();
-
-  setInterval(() => {
-    carregarJogos();
-    carregarJogosLive();
-  }, 60000);
-});
+carregarJogos();
+setInterval(carregarJogos, 60000);
 
 </script>
+
+</body>
+</html>
