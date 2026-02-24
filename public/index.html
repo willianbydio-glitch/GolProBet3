@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>GolBetPro - Motor Inteligente</title>
+<title>GolBetPro - Elite Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -13,64 +13,76 @@ body {
   padding: 20px;
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-}
+h1 { text-align:center; margin-bottom:20px; }
 
 button {
-  background: #22c55e;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  margin-top: 8px;
+  background:#22c55e;
+  border:none;
+  padding:8px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+  margin-top:8px;
 }
 
-button:hover { opacity: 0.8; }
+button:hover { opacity:.85; }
 
 .jogo {
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
+  background:#1e293b;
+  padding:15px;
+  border-radius:8px;
+  margin-bottom:15px;
 }
 
-.status {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 10px;
-}
+.status { font-size:14px; opacity:.8; margin-bottom:10px; }
 
 .estatisticas {
-  margin-top: 10px;
-  background: #334155;
-  padding: 10px;
-  border-radius: 6px;
+  margin-top:10px;
+  background:#334155;
+  padding:10px;
+  border-radius:6px;
 }
 
-.forte { color: #22c55e; font-weight: bold; }
-.moderado { color: #facc15; font-weight: bold; }
-.fraco { color: #ef4444; font-weight: bold; }
+.forte { color:#22c55e; font-weight:bold; }
+.moderado { color:#facc15; font-weight:bold; }
+.fraco { color:#ef4444; font-weight:bold; }
 
-hr { border: 1px solid #475569; }
+.ranking {
+  margin-top:30px;
+  padding:15px;
+  background:#111827;
+  border-radius:8px;
+}
+
+hr { border:1px solid #475569; }
 </style>
 </head>
 
 <body>
 
-<h1>⚽ GolBetPro - Motor Inteligente</h1>
+<h1>⚽ GolBetPro - Elite Pro</h1>
 
 <button onclick="carregarJogos()">Atualizar Jogos</button>
 
 <div id="jogos">Carregando jogos...</div>
 
+<div class="ranking">
+  <h2>🏆 Ranking Global Inteligente</h2>
+  <div id="ranking"></div>
+</div>
+
 <script>
 
-async function carregarJogos() {
-  try {
+let rankingGlobal = [];
 
+// ===============================
+// CARREGAR JOGOS
+// ===============================
+async function carregarJogos(){
+
+  rankingGlobal = [];
+
+  try{
     const hoje = new Date().toISOString().split("T")[0];
     const response = await fetch(`/api/jogos?date=${hoje}`);
     const data = await response.json();
@@ -78,12 +90,12 @@ async function carregarJogos() {
     const container = document.getElementById("jogos");
     container.innerHTML = "";
 
-    if (!data.response || data.response.length === 0) {
+    if(!data.response || data.response.length === 0){
       container.innerHTML = "<p>Nenhum jogo encontrado.</p>";
       return;
     }
 
-    data.response.forEach(jogo => {
+    data.response.forEach(jogo=>{
 
       const div = document.createElement("div");
       div.className = "jogo";
@@ -111,45 +123,53 @@ async function carregarJogos() {
       container.appendChild(div);
     });
 
-  } catch (error) {
-    document.getElementById("jogos").innerHTML =
-      "<p>Erro ao carregar jogos.</p>";
+  }catch(e){
+    document.getElementById("jogos").innerHTML = "Erro ao carregar jogos.";
   }
 }
 
-async function carregarEstatisticas(fixtureId) {
+// ===============================
+// MOTOR ELITE COMPLETO
+// ===============================
+async function carregarEstatisticas(fixtureId){
 
   const container = document.getElementById(`stats-${fixtureId}`);
   container.innerHTML = "Carregando estatísticas...";
 
-  try {
+  try{
 
     const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
     const data = await response.json();
 
-    if (!data.response || data.response.length === 0) {
+    if(!data.response || data.response.length === 0){
       container.innerHTML = "Sem estatísticas disponíveis.";
       return;
     }
 
     container.innerHTML = "";
 
-    let totalChutes = 0;
-    let totalChutesGol = 0;
-    let ambasMarcamCheck = 0;
+    let totalChutes=0, totalChutesGol=0, totalEscanteios=0;
+    let ambas=0;
+    let pressaoCasa=0, pressaoFora=0;
 
-    data.response.forEach(time => {
+    data.response.forEach((time,index)=>{
 
-      const shots = Number(time.statistics.find(s => s.type === "Total Shots")?.value || 0);
-      const shotsOnGoal = Number(time.statistics.find(s => s.type === "Shots on Goal")?.value || 0);
-      const corners = Number(time.statistics.find(s => s.type === "Corner Kicks")?.value || 0);
+      const shots = Number(time.statistics.find(s=>s.type==="Total Shots")?.value || 0);
+      const shotsOnGoal = Number(time.statistics.find(s=>s.type==="Shots on Goal")?.value || 0);
+      const corners = Number(time.statistics.find(s=>s.type==="Corner Kicks")?.value || 0);
 
-      totalChutes += shots;
-      totalChutesGol += shotsOnGoal;
+      totalChutes+=shots;
+      totalChutesGol+=shotsOnGoal;
+      totalEscanteios+=corners;
 
-      if (shotsOnGoal >= 3) ambasMarcamCheck++;
+      if(shotsOnGoal>=3) ambas++;
 
-      container.innerHTML += `
+      const intensidadeTime = (shots*0.5)+(shotsOnGoal*1.5)+(corners*0.3);
+
+      if(index===0) pressaoCasa=intensidadeTime;
+      else pressaoFora=intensidadeTime;
+
+      container.innerHTML+=`
         <h4>${time.team.name}</h4>
         <ul>
           <li>Total Chutes: ${shots}</li>
@@ -159,46 +179,80 @@ async function carregarEstatisticas(fixtureId) {
       `;
     });
 
-    // MOTOR DE ANÁLISE
+    // MODELO ADAPTATIVO
+    const intensidadeBase =
+      (totalChutes*0.4)+(totalChutesGol*1.4)+(totalEscanteios*0.3);
 
-    let overClasse = "fraco";
-    let overTexto = "❌ Fraco";
+    const multiplicador =
+      1 + (totalChutesGol>=6?0.15:0) + (totalEscanteios>=8?0.1:0);
 
-    if (totalChutes >= 20 || totalChutesGol >= 8) {
-      overClasse = "forte";
-      overTexto = "🔥 Forte";
-    } else if (totalChutes >= 14) {
-      overClasse = "moderado";
-      overTexto = "⚠ Moderado";
+    const intensidadeFinal = intensidadeBase*multiplicador;
+
+    const xG = (totalChutesGol*0.32)+(totalChutes*0.05);
+
+    let probOver=Math.min(95,(intensidadeFinal/35)*100);
+    let probBTTS=Math.min(95,ambas*45);
+
+    let score = Math.min(100,
+      Math.round((probOver*0.55)+(probBTTS*0.30)+(xG*5))
+    );
+
+    // MOMENTUM
+    let momentum="⚪ Equilibrado";
+    let momentumClasse="";
+
+    if(pressaoCasa>pressaoFora*1.4){
+      momentum="🏠 Pressão Casa";
+      momentumClasse="forte";
+    }else if(pressaoFora>pressaoCasa*1.4){
+      momentum="✈ Pressão Visitante";
+      momentumClasse="forte";
+    }else if(totalChutesGol>=7){
+      momentum="🔥 Alta Intensidade";
+      momentumClasse="moderado";
     }
 
-    let bttsClasse = "fraco";
-    let bttsTexto = "❌ Fraco";
+    // RECOMENDAÇÃO
+    let recomendacao="❌ Baixa oportunidade";
+    if(score>=80) recomendacao="🔥 ENTRADA FORTE";
+    else if(score>=60) recomendacao="⚠ Boa oportunidade";
 
-    if (ambasMarcamCheck === 2) {
-      bttsClasse = "forte";
-      bttsTexto = "🔥 Forte";
-    } else if (ambasMarcamCheck === 1) {
-      bttsClasse = "moderado";
-      bttsTexto = "⚠ Moderado";
-    }
+    rankingGlobal.push({fixtureId,score});
+    rankingGlobal.sort((a,b)=>b.score-a.score);
+    atualizarRanking();
 
-    container.innerHTML += `
+    container.innerHTML+=`
       <hr>
-      <h3>📊 Análise GolBetPro</h3>
-      <p>Over 2.5: <span class="${overClasse}">${overTexto}</span></p>
-      <p>Ambas Marcam: <span class="${bttsClasse}">${bttsTexto}</span></p>
+      <h3>🧠 Motor Elite Adaptativo</h3>
+      <p>📈 xG Estimado: <strong>${xG.toFixed(2)}</strong></p>
+      <p>Over 2.5: ${probOver.toFixed(0)}%</p>
+      <p>BTTS: ${probBTTS.toFixed(0)}%</p>
+      <p>⭐ Score Inteligente: <strong>${score}/100</strong></p>
+      <p>${momentumClasse?`<span class="${momentumClasse}">${momentum}</span>`:momentum}</p>
+      <h3>${recomendacao}</h3>
     `;
 
-  } catch (error) {
-    container.innerHTML = "Erro ao carregar estatísticas.";
+  }catch(e){
+    container.innerHTML="Erro ao carregar estatísticas.";
   }
 }
 
+// ===============================
+// RANKING GLOBAL
+// ===============================
+function atualizarRanking(){
+  const div=document.getElementById("ranking");
+  div.innerHTML="";
+
+  rankingGlobal.slice(0,5).forEach((j,i)=>{
+    div.innerHTML+=`<p>${i+1}º - Jogo ${j.fixtureId} ⭐ ${j.score}/100</p>`;
+  });
+}
+
+// INIT
 carregarJogos();
-setInterval(carregarJogos, 60000);
+setInterval(carregarJogos,60000);
 
 </script>
-
 </body>
 </html>
