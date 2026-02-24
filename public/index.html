@@ -1,142 +1,123 @@
 <script>
 
-function mostrarAba(aba){
-    document.getElementById("jogosHoje").style.display =
-        aba === "hoje" ? "block" : "none";
+// ===============================
+// MOSTRAR ABAS
+// ===============================
+function mostrarAba(aba) {
+  document.getElementById("jogosHoje").style.display =
+    aba === "hoje" ? "block" : "none";
 
-    document.getElementById("jogosLive").style.display =
-        aba === "live" ? "block" : "none";
+  document.getElementById("jogosLive").style.display =
+    aba === "live" ? "block" : "none";
 }
 
-/* ===============================
-RENDER CARD
-=============================== */
+// ===============================
+// CRIAR CARD (GENÉRICO)
+// ===============================
+function criarCard(game, isLive = false) {
 
-function criarCard(game, isLive=false){
+  const home = game.teams?.home?.name || "";
+  const away = game.teams?.away?.name || "";
 
-    const analysis = game.analysis || {};
-    const elite = game.eliteUltra || {};
+  const homeGoals = game.goals?.home ?? 0;
+  const awayGoals = game.goals?.away ?? 0;
 
-    const home = game.teams?.home?.name || "";
-    const away = game.teams?.away?.name || "";
+  const statusLong = game.fixture?.status?.long || "";
+  const elapsed = game.fixture?.status?.elapsed || "";
 
-    const homeGoals = game.goals?.home ?? 0;
-    const awayGoals = game.goals?.away ?? 0;
+  return `
+    <div class="jogo">
 
-    const statusLong = game.fixture?.status?.long || "";
-    const elapsed = game.fixture?.status?.elapsed || "";
+        <h3>
+          ${isLive ? "🔴" : ""} ${home} ${homeGoals} x ${awayGoals} ${away}
+        </h3>
 
-    const score =
-        typeof analysis.score === "number"
-        ? analysis.score.toFixed(2)
-        : "0.00";
-
-    return `
-        <div class="jogo">
-
-            <h3>
-                ${isLive ? "🔴" : ""}
-                ${home} ${homeGoals} x ${awayGoals} ${away}
-            </h3>
-
-            <div class="status">
-                ${statusLong}
-                ${isLive && elapsed ? `(${elapsed} min)` : ""}
-            </div>
-
-            <div class="analise">
-                <p>🎯 Prognóstico: ${analysis.prediction || "N/A"}</p>
-                <p>🔥 Confiança: ${analysis.confidence || "N/A"}</p>
-                <p>⭐ Score: ${score}</p>
-                <p>🦓 Zebra Risk: ${elite.zebraRisk ?? 1}/5</p>
-                <p>💰 Cashout: ${elite.cashoutAdvice || ""}</p>
-            </div>
-
+        <div class="status">
+          ${statusLong} ${isLive && elapsed ? `(${elapsed} min)` : ""}
         </div>
-    `;
+
+    </div>
+  `;
 }
 
-/* ===============================
-CARREGAR HOJE
-=============================== */
+// ===============================
+// CARREGAR JOGOS DE HOJE
+// ===============================
+async function carregarJogos() {
+  try {
 
-async function carregarJogos(){
+    const hoje = new Date().toISOString().split("T")[0];
+    const response = await fetch(`/api/jogos?date=${hoje}`);
 
-    try{
-
-        const hoje = new Date().toISOString().split("T")[0];
-        const response = await fetch(`/api/jogos?date=${hoje}`);
-
-        if(!response.ok){
-            throw new Error("Erro na API");
-        }
-
-        const data = await response.json();
-
-        const container = document.getElementById("jogosHoje");
-        container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
-
-        if(!data.games || !Array.isArray(data.games) || data.games.length === 0){
-            container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
-            return;
-        }
-
-        data.games.forEach(game=>{
-            container.innerHTML += criarCard(game,false);
-        });
-
-    }catch(e){
-        console.error("Erro carregarJogos:",e);
+    if (!response.ok) {
+      console.error("Erro ao buscar jogos:", response.status);
+      return;
     }
-}
 
-/* ===============================
-CARREGAR LIVE
-=============================== */
+    const data = await response.json();
+    const container = document.getElementById("jogosHoje");
 
-async function carregarJogosLive(){
+    container.innerHTML = "<h2>📅 Jogos Hoje</h2>";
 
-    try{
-
-        const response = await fetch(`/api/jogos?live=all`);
-
-        if(!response.ok){
-            throw new Error("Erro na API");
-        }
-
-        const data = await response.json();
-
-        const container = document.getElementById("jogosLive");
-        container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
-
-        if(!data.games || !Array.isArray(data.games) || data.games.length === 0){
-            container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
-            return;
-        }
-
-        data.games.forEach(game=>{
-            if(game.fixture?.status?.short !== "FT"){
-                container.innerHTML += criarCard(game,true);
-            }
-        });
-
-    }catch(e){
-        console.error("Erro carregarJogosLive:",e);
+    if (!data.response || !Array.isArray(data.response)) {
+      container.innerHTML += "<p>Nenhum jogo encontrado.</p>";
+      return;
     }
+
+    data.response.forEach(game => {
+      container.innerHTML += criarCard(game, false);
+    });
+
+  } catch (err) {
+    console.error("Erro em carregarJogos:", err);
+  }
 }
 
-/* ===============================
-INIT
-=============================== */
+// ===============================
+// CARREGAR JOGOS AO VIVO
+// ===============================
+async function carregarJogosLive() {
+  try {
 
-document.addEventListener("DOMContentLoaded",()=>{
+    const response = await fetch(`/api/jogos?live=all`);
+
+    if (!response.ok) {
+      console.error("Erro ao buscar jogos ao vivo:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+    const container = document.getElementById("jogosLive");
+
+    container.innerHTML = "<h2>🔴 Jogos Ao Vivo</h2>";
+
+    if (!data.response || !Array.isArray(data.response)) {
+      container.innerHTML += "<p>Nenhum jogo ao vivo</p>";
+      return;
+    }
+
+    data.response.forEach(game => {
+      if (game.fixture?.status?.short !== "FT") {
+        container.innerHTML += criarCard(game, true);
+      }
+    });
+
+  } catch (err) {
+    console.error("Erro em carregarJogosLive:", err);
+  }
+}
+
+// ===============================
+// AUTO UPDATE
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+  carregarJogos();
+  carregarJogosLive();
+
+  setInterval(() => {
     carregarJogos();
     carregarJogosLive();
-
-    setInterval(()=>{
-        carregarJogos();
-        carregarJogosLive();
-    },60000);
+  }, 60000);
 });
 
 </script>
