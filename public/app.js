@@ -7,6 +7,10 @@ function mostrarAba(aba){
         aba === "live" ? "block" : "none";
 }
 
+/* ===============================
+JOGOS HOJE
+=============================== */
+
 async function carregarJogos(){
 
     const hoje = new Date().toISOString().split("T")[0];
@@ -22,25 +26,39 @@ async function carregarJogos(){
 
     data.games.forEach(game=>{
 
+        const master = game.masterEdition || {};
+
         container.innerHTML += `
         <div class="jogo">
 
             <h3>
-                ${game.teams?.home?.name}
+                ${game.teams?.home?.name || ""}
                 ${game.goals?.home ?? 0}
                 x
                 ${game.goals?.away ?? 0}
-                ${game.teams?.away?.name}
+                ${game.teams?.away?.name || ""}
             </h3>
 
             <div class="status">
                 ${game.fixture?.status?.long || ""}
             </div>
 
+            <div class="analise">
+
+                <p>⚡ Momentum: ${master.momentum?.toFixed(1) || 0}</p>
+                <p>🎯 Probabilidade: ${master.probability?.toFixed(1) || 0}%</p>
+                <p>🧠 Status AI: ${master.zebra || ""}</p>
+
+            </div>
+
         </div>
         `;
     });
 }
+
+/* ===============================
+JOGOS AO VIVO
+=============================== */
 
 async function carregarJogosLive(){
 
@@ -57,25 +75,39 @@ async function carregarJogosLive(){
 
         if(game.fixture?.status?.short === "FT") return;
 
+        const master = game.masterEdition || {};
+
         container.innerHTML += `
         <div class="jogo">
 
             <h3>
-                🔴 ${game.teams?.home?.name}
+                🔴 ${game.teams?.home?.name || ""}
                 ${game.goals?.home ?? 0}
                 x
                 ${game.goals?.away ?? 0}
-                ${game.teams?.away?.name}
+                ${game.teams?.away?.name || ""}
             </h3>
 
             <div class="status">
                 ${game.fixture?.status?.long || ""}
             </div>
 
+            <div class="analise">
+
+                <p>⚡ Momentum: ${master.momentum?.toFixed(1) || 0}</p>
+                <p>🎯 Probabilidade: ${master.probability?.toFixed(1) || 0}%</p>
+                <p>🧠 Status AI: ${master.zebra || ""}</p>
+
+            </div>
+
         </div>
         `;
     });
 }
+
+/* ===============================
+AUTO UPDATE
+=============================== */
 
 carregarJogos();
 carregarJogosLive();
