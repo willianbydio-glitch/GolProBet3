@@ -1,9 +1,10 @@
+const API_BASE = "https://golbetpro-backend-production.up.railway.app";
 async function carregarJogos() {
 
   try {
 
     const hoje = new Date().toISOString().split("T")[0];
-    const response = await fetch(`/api/jogos?date=${hoje}`);
+    const response = await fetch(`${API_BASE}/api/jogos?date=${hoje}`);
     const data = await response.json();
 
     const container = document.getElementById("jogos");
