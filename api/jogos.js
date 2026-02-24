@@ -1,10 +1,12 @@
 const MasterEngine = require("../engine/masterEngine");
+const CacheEngine = require("../engine/cacheEngine");
 const fetch = require("node-fetch");
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
 const BASE_URL = "https://v3.football.api-sports.io";
 
 module.exports = async function handler(req, res) {
+
   try {
 
     if (!API_KEY) {
@@ -13,14 +15,20 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    /* ===============================
+    CACHE CHECK
+    =============================== */
+
+    if (CacheEngine.isValid()) {
+      return res.status(200).json(CacheEngine.getCache());
+    }
+
     let endpoint = "/fixtures";
 
-    // LIVE MODE
     if (req.query.live === "all") {
       endpoint = "/fixtures?live=all";
     }
 
-    // DATE MODE
     else if (req.query.date) {
       endpoint = `/fixtures?date=${req.query.date}`;
     }
@@ -56,10 +64,18 @@ module.exports = async function handler(req, res) {
 
     });
 
-    res.status(200).json({
+    const cacheResponse = {
       success: true,
       games
-    });
+    };
+
+    /* ===============================
+    SAVE CACHE
+    =============================== */
+
+    CacheEngine.setCache(cacheResponse);
+
+    res.status(200).json(cacheResponse);
 
   } catch (err) {
 
