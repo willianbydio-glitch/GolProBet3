@@ -85,36 +85,48 @@ async function carregarJogos(){
     const container = document.getElementById("jogos");
     container.innerHTML = "";
 
-    if(!data.response || data.response.length === 0){
+    if(!data.response || Object.keys(data.response).length === 0){
       container.innerHTML = "<p>Nenhum jogo encontrado.</p>";
       return;
     }
 
-    data.response.forEach(jogo=>{
-      const div = document.createElement("div");
-      div.className = "jogo";
+    const campeonatos = Object.values(data.response);
 
-      div.innerHTML = `
-        <h3>
-          ${jogo.teams.home.name}
-          ${jogo.goals.home ?? 0}
-          x
-          ${jogo.goals.away ?? 0}
-          ${jogo.teams.away.name}
-        </h3>
+    campeonatos.forEach(camp => {
 
-        <div class="status">
-          ${jogo.league.name} - ${jogo.fixture.status.long}
-        </div>
+      const tituloLiga = document.createElement("h2");
+      tituloLiga.innerText = `🏆 ${camp.league.name} - ${camp.league.country}`;
+      tituloLiga.style.marginTop = "30px";
+      container.appendChild(tituloLiga);
 
-        <button onclick="carregarEstatisticas(${jogo.fixture.id})">
-          📊 Ver Estatísticas + Análise
-        </button>
+      camp.games.forEach(jogo=>{
 
-        <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
-      `;
+        const div = document.createElement("div");
+        div.className = "jogo";
 
-      container.appendChild(div);
+        div.innerHTML = `
+          <h3>
+            ${jogo.teams.home.name}
+            ${jogo.goals.home ?? 0}
+            x
+            ${jogo.goals.away ?? 0}
+            ${jogo.teams.away.name}
+          </h3>
+
+          <div class="status">
+            ${jogo.fixture.status.long}
+          </div>
+
+          <button onclick="carregarEstatisticas(${jogo.fixture.id})">
+            📊 Ver Estatísticas + Análise
+          </button>
+
+          <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
+        `;
+
+        container.appendChild(div);
+      });
+
     });
 
   }catch(e){
@@ -252,7 +264,6 @@ function atualizarRanking(){
   });
 }
 
-// Inicialização
 carregarJogos();
 setInterval(carregarJogos,60000);
 </script>
