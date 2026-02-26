@@ -79,7 +79,7 @@ async function carregarJogos(){
 
   try{
     const hoje = new Date().toISOString().split("T")[0];
-    const response = await fetch(`/api/jogos?date=${hoje}`);
+    const response = await fetch(`https://keen-grace-production.up.railway.app/api/jogos?date=${hoje}`);
     const data = await response.json();
 
     const container = document.getElementById("jogos");
