@@ -123,6 +123,8 @@ async function carregarJogos(){
           </h3>
 
           <div>${jogo.fixture.status.long}</div>
+
+          <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
         `;
 
         container.appendChild(div);
@@ -144,7 +146,10 @@ async function carregarEstatisticas(fixtureId){
   container.innerHTML = "Carregando estatísticas...";
 
   try{
-    const response = await fetch(`/api/estatisticas?fixture=${fixtureId}`);
+    const response = await fetch(
+      `https://keen-grace-production.up.railway.app/api/estatisticas?fixture=${fixtureId}`
+    );
+
     const data = await response.json();
 
     if(!data.response){
@@ -260,9 +265,7 @@ async function carregarEstatisticas(fixtureId){
 
 function atualizarRanking(){
   const div=document.getElementById("ranking");
-
   div.innerHTML="";
-
   rankingGlobal.slice(0,5).forEach((j,i)=>{
     div.innerHTML+=`<p>${i+1}º - Jogo ${j.fixtureId} ⭐ ${j.score}/100</p>`;
   });
