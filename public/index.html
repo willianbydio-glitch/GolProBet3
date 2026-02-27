@@ -128,6 +128,10 @@ async function carregarJogos(){
 
           <div>${jogo.fixture.status.long}</div>
 
+          <button onclick="carregarEstatisticas(${jogo.fixture.id})">
+            📊 Ver Análise
+          </button>
+
           <div id="stats-${jogo.fixture.id}" class="estatisticas"></div>
         `;
 
