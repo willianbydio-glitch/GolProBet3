@@ -84,6 +84,11 @@ async function carregarJogos(){
       `https://keen-grace-production.up.railway.app/api/jogos?date=${hoje}`
     );
 
+    // ✅ ADICIONADO (sem alterar mais nada)
+    if (!response.ok) {
+      throw new Error("Backend não respondeu");
+    }
+
     const data = await response.json();
 
     const container = document.getElementById("jogos");
@@ -149,6 +154,11 @@ async function carregarEstatisticas(fixtureId){
     const response = await fetch(
       `https://keen-grace-production.up.railway.app/api/estatisticas?fixture=${fixtureId}`
     );
+
+    // ✅ ADICIONADO AQUI TAMBÉM
+    if (!response.ok) {
+      throw new Error("Backend não respondeu");
+    }
 
     const data = await response.json();
 
