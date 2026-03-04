@@ -294,7 +294,7 @@ async function carregarPrognostico(homeId, awayId, leagueId, fixtureId){
   try{
 
     const response = await fetch(
-      `https://keen-grace-production.up.railway.app//api/prognostico-elite?home=${homeId}&away=${awayId}&league=${leagueId}`
+      `https://keen-grace-production.up.railway.app/api/prognostico-elite?home=${homeId}&away=${awayId}&league=${leagueId}`
     );
 
     const data = await response.json();
@@ -304,24 +304,28 @@ async function carregarPrognostico(homeId, awayId, leagueId, fixtureId){
       return;
     }
 
+    const elite = data.elite;
+
     container.innerHTML=`
       <hr>
       <h3>📈 Prognóstico Pré-Jogo</h3>
 
-      <p>⚽ Média Gols Esperada: <strong>${data.mediaGols}</strong></p>
-
-      <h4>🔢 Probabilidade Over</h4>
-      <p>Over 1.5 → ${data.over15}%</p>
-      <p>Over 2.5 → ${data.over25}%</p>
-      <p>Over 3.5 → ${data.over35}%</p>
-      <p>Over 4.5 → ${data.over45}%</p>
+      <p>⚽ Média Gols Esperada: <strong>${elite.expectedGoals}</strong></p>
 
       <h4>🏆 Resultado</h4>
-      <p>Casa → ${data.casa}%</p>
-      <p>Empate → ${data.empate}%</p>
-      <p>Fora → ${data.fora}%</p>
+      <p>Casa → ${elite.probability.homeWin}%</p>
+      <p>Empate → ${elite.probability.draw}%</p>
+      <p>Fora → ${elite.probability.awayWin}%</p>
 
-      <h3>🔥 Sugestão: ${data.sugestao}</h3>
+      <h4>🔢 Mercados</h4>
+      <p>Over 2.5 → ${elite.markets.over25}%</p>
+      <p>Under 2.5 → ${elite.markets.under25}%</p>
+      <p>BTTS → ${elite.markets.btts}%</p>
+
+      <h4>🎯 Placares Mais Prováveis</h4>
+      <p>${elite.topScores[0].score} (${(elite.topScores[0].probability*100).toFixed(1)}%)</p>
+      <p>${elite.topScores[1].score} (${(elite.topScores[1].probability*100).toFixed(1)}%)</p>
+      <p>${elite.topScores[2].score} (${(elite.topScores[2].probability*100).toFixed(1)}%)</p>
     `;
 
   }catch(e){
