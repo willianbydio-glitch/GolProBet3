@@ -63,8 +63,15 @@ hr { border:1px solid #475569; }
 <h1>⚽ GolBetPro Elite</h1>
 
 <button onclick="carregarJogos()">Atualizar Jogos</button>
+  <button onclick="carregarEliteTrader()">🔥 Elite Trader</button>
 
 <div id="jogos">Carregando jogos...</div>
+
+<!-- 🔥 ELITE TRADER -->
+<div id="elite-trader" class="ranking" style="margin-top:30px;">
+  <h2>🔥 Elite Trader - Melhores Oportunidades</h2>
+  <div id="elite-conteudo"></div>
+</div>
 
 <div class="ranking">
   <h2>🏆 Ranking Global Inteligente</h2>
@@ -341,8 +348,59 @@ function atualizarRanking(){
   });
 }
 
-carregarJogos();
-setInterval(carregarJogos,60000);
+  async function carregarEliteTrader(){
+
+  const container = document.getElementById("elite-conteudo");
+  container.innerHTML = "Buscando oportunidades...";
+
+  try{
+
+    const hoje = new Date().toISOString().split("T")[0];
+
+    const response = await fetch(
+      `https://keen-grace-production.up.railway.app/api/elite-trader?date=${hoje}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Backend não respondeu");
+    }
+
+    const data = await response.json();
+
+    if(!data.success || !data.elitePicks || data.elitePicks.length === 0){
+      container.innerHTML = "<p>Nenhuma oportunidade encontrada hoje.</p>";
+      return;
+    }
+
+    container.innerHTML = "";
+
+    data.elitePicks.forEach(pick => {
+
+      container.innerHTML += `
+        <div class="jogo" style="background:#0f172a;">
+          <h3>${pick.jogo}</h3>
+          <p><strong>Liga:</strong> ${pick.liga}</p>
+          <p><strong>Mercado:</strong> ${pick.mercado}</p>
+          <p><strong>Odd:</strong> ${pick.odd}</p>
+          <p><strong>Prob Modelo:</strong> ${pick.probModelo}%</p>
+          <p><strong>EV:</strong> ${pick.ev}%</p>
+          <p><strong>Edge:</strong> ${pick.edge}%</p>
+          <p><strong>Rating:</strong> ${pick.rating}</p>
+          <p><strong>Stake Recomendada:</strong> ${pick.stakeRecomendada}</p>
+          <p><strong>Risco:</strong> ${pick.risco}</p>
+          ${pick.alerta ? `<p style="color:#facc15; font-weight:bold;">${pick.alerta}</p>` : ""}
+        </div>
+      `;
+    });
+
+  }catch(e){
+    console.error(e);
+    container.innerHTML = "Erro ao buscar Elite Trader.";
+  }
+}
+  carregarJogos();
+  carregarEliteTrader();
+  setInterval(carregarJogos,60000);
 </script>
 
 </body>
