@@ -91,6 +91,46 @@ async function carregarJogos() {
   }
 }
 
+async function carregarPicksIA(){
+
+ const hoje = new Date().toISOString().slice(0,10);
+
+ const response = await fetch(
+  `https://keen-grace-production.up.railway.app/api/picks-ia?date=${hoje}`
+ );
+
+ const data = await response.json();
+
+ const container = document.getElementById("picksIA");
+
+ container.innerHTML = "";
+
+ data.picks.forEach(pick => {
+
+  container.innerHTML += `
+   <div class="pickIA">
+
+    <h3>${pick.jogo}</h3>
+
+    <p><b>Liga:</b> ${pick.liga}</p>
+
+    <p><b>Mercado:</b> ${pick.mercado}</p>
+
+    <p><b>Odd:</b> ${pick.odd}</p>
+
+    <p><b>Probabilidade:</b> ${pick.probModelo}%</p>
+
+    <p><b>EV:</b> ${pick.ev}%</p>
+
+    <p><b>Rating:</b> ${pick.rating}</p>
+
+   </div>
+  `;
+
+ });
+
+}
+
 // Atualiza ao abrir
 carregarJogos();
 
