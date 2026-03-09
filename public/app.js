@@ -96,8 +96,8 @@ async function carregarPicksIA(){
  const hoje = new Date().toISOString().slice(0,10);
 
  const response = await fetch(
-  `https://keen-grace-production.up.railway.app/api/picks-ia?date=${hoje}`
- );
+ `${API_BASE}/api/picks-ia?date=${hoje}`
+);
 
  const data = await response.json();
 
@@ -105,7 +105,12 @@ async function carregarPicksIA(){
 
  container.innerHTML = "";
 
- data.picks.forEach(pick => {
+ if (!data.picks || data.picks.length === 0) {
+  container.innerHTML = "<p>Nenhuma pick encontrada hoje.</p>";
+  return;
+}
+
+data.picks.forEach(pick => {
 
   container.innerHTML += `
    <div class="pickIA">
