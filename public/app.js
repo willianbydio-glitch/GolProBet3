@@ -109,7 +109,10 @@ async function carregarPicksIA(){
   return;
  }
 
- data.picks.forEach(pick => {
+ if(!data.picks || data.picks.length === 0){
+ container.innerHTML = "<p>Nenhuma aposta encontrada hoje.</p>";
+ return;
+}
 
   container.innerHTML += `
    <div class="pickIA">
@@ -145,6 +148,11 @@ async function carregarApostasDoDia(){
  const container = document.getElementById("top-apostas");
 
  container.innerHTML = "";
+
+ if(!data.picks || data.picks.length === 0){
+  container.innerHTML = "<p>Nenhuma aposta encontrada hoje.</p>";
+  return;
+ }
 
  data.picks.forEach(pick => {
 
