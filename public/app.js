@@ -268,10 +268,42 @@ async function carregarPicksIA(){
  });
 
 }
+async function carregarApostasDoDia(){
+
+ const hoje = new Date().toISOString().split("T")[0];
+
+ const res = await fetch(`https://SEU_BACKEND/api/apostas-do-dia?date=${hoje}`);
+
+ const data = await res.json();
+
+ const container = document.getElementById("top-apostas");
+
+ container.innerHTML = "";
+
+ data.picks.forEach(pick => {
+
+  const card = document.createElement("div");
+
+  card.className = "card-aposta";
+
+  card.innerHTML = `
+   <h3>${pick.jogo}</h3>
+   <p><b>Mercado:</b> ${pick.mercado}</p>
+   <p><b>Odd:</b> ${pick.odd}</p>
+   <p><b>Probabilidade:</b> ${pick.probModelo}%</p>
+   <p><b>EV:</b> ${pick.ev}%</p>
+  `;
+
+  container.appendChild(card);
+
+ });
+
+}
 
 // Atualiza ao abrir
 carregarJogos();
 carregarPicksIA();
+carregarApostasDoDia();
 
 // Atualiza a cada 60s
 setInterval(carregarJogos, 60000);
