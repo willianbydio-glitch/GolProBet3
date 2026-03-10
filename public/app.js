@@ -1,4 +1,4 @@
-const API_BASE = "https://golbetpro-backend-production.up.railway.app";
+const API_BASE = "https://keen-grace-production.up.railway.app";
 async function carregarJogos() {
 
   try {
