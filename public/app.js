@@ -174,6 +174,51 @@ async function carregarApostasDoDia(){
 
 }
 
+async function carregarTopApostas(){
+
+ const res = await fetch(
+  "https://keen-grace-production.up.railway.app/api/top-apostas"
+ );
+
+ const data = await res.json();
+
+ const div = document.getElementById("top-apostas");
+
+ div.innerHTML = "";
+
+ if(data.total === 0){
+
+  div.innerHTML = `
+  <p>Nenhuma oportunidade encontrada hoje</p>
+  `;
+
+  return;
+ }
+
+ data.picks.forEach(p=>{
+
+  div.innerHTML += `
+  <div class="cardPick">
+
+  <h3>${p.home} x ${p.away}</h3>
+
+  <p>Mercado: ${p.market}</p>
+
+  <p>Odd: ${p.odd}</p>
+
+  <p>Probabilidade: ${(p.probModelo).toFixed(1)}%</p>
+
+  <p>Value: ${(p.edge*100).toFixed(2)}%</p>
+
+  <p>Score: ${p.traderScore.toFixed(2)}</p>
+
+  </div>
+  `;
+
+ });
+
+}
+
 // Atualiza ao abrir
 carregarJogos();
 carregarPicksIA();
