@@ -27,12 +27,6 @@ button {
 
 button:hover { opacity:.85; }
 
-.jogo {
-  background:#1e293b;
-  padding:15px;
-  border-radius:8px;
-  margin-bottom:15px;
-}
 
 .status { font-size:14px; opacity:.8; margin-bottom:10px; }
 
@@ -55,32 +49,71 @@ button:hover { opacity:.85; }
 }
 
 hr { border:1px solid #475569; }
+
+
+  .card-aposta{
+ background:#111;
+ color:white;
+ padding:15px;
+ margin-bottom:10px;
+ border-radius:10px;
+}
+
+.pickIA{
+ background:#1b1b1b;
+ color:white;
+ padding:15px;
+ margin-bottom:10px;
+ border-radius:10px;
+}
+
+.jogo{
+ background:#222;
+ color:white;
+ padding:15px;
+ margin-bottom:10px;
+ border-radius:10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 SUPER PICKS IA</h2>
-
-<div id="picksIA"></div>
-
 <h1>⚽ GolBetPro Elite</h1>
 
 <button onclick="carregarJogos()">Atualizar Jogos</button>
-  <button onclick="carregarEliteTrader()">🔥 Elite Trader</button>
+<button onclick="carregarEliteTrader()">🔥 Elite Trader</button>
 
+<hr>
+
+<h2>🔥 TOP APOSTAS DO DIA</h2>
+<div id="top-apostas"></div>
+
+<hr>
+
+<h2>🧠 PICKS DA IA</h2>
+<div id="picksIA"></div>
+
+<hr>
+
+<h2>⚽ JOGOS ANALISADOS</h2>
 <div id="jogos">Carregando jogos...</div>
 
-<!-- 🔥 ELITE TRADER -->
-<div id="elite-trader" class="ranking" style="margin-top:30px;">
+<hr>
+
+<!-- ELITE TRADER -->
+<div id="elite-trader" class="ranking">
   <h2>🔥 Elite Trader - Melhores Oportunidades</h2>
   <div id="elite-conteudo"></div>
 </div>
+
+<hr>
 
 <div class="ranking">
   <h2>🏆 Ranking Global Inteligente</h2>
   <div id="ranking"></div>
 </div>
+
 
 <script>
 let rankingGlobal = [];
@@ -402,10 +435,18 @@ function atualizarRanking(){
     container.innerHTML = "Erro ao buscar Elite Trader.";
   }
 }
+  window.onload = () => {
+
   carregarJogos();
   carregarEliteTrader();
-  setInterval(carregarJogos,60000);
-</script>
 
+};
+
+setInterval(carregarJogos,60000);
+setInterval(carregarEliteTrader,60000);
+</script>
+  
+<script src="app.js"></script>
+  
 </body>
 </html>
