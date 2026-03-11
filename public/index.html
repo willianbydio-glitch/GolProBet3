@@ -242,6 +242,8 @@ async function carregarApostaDoDia(){
         <p><strong>Odd:</strong> ${pick.odd}</p>
         <p><strong>Probabilidade:</strong> ${pick.probModelo}%</p>
 
+        ${pick.sharpMoney ? `<p>${pick.sharpMoney}</p>` : ""}
+      
         <p><strong>EV:</strong> ${pick.ev}%</p>
         <p><strong>Edge:</strong> ${pick.edge}%</p>
 
